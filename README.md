@@ -7,6 +7,8 @@ to the keyboard over USB (CDC ACM), working together with the firmware and hardw
 - Firmware (embedded): [`KaSe_Code`](https://github.com/mornepousse/KaSe_Code)
 - PCB / hardware / mechanics: [`KaSe_PCB`](https://github.com/mornepousse/KaSe_PCB)
 
+![KaSe_soft main window](capture.jpg)
+
 ---
 
 ## Features
@@ -225,6 +227,12 @@ Contributions are welcome, for example:
 
 If you open an issue or pull request, please mention whether your changes
 also touch the firmware (`KaSe_Code`) or hardware (`KaSe_PCB`).
+
+### Roadmap (short)
+
+- ✅ Linux support (tested with udev-based serial detection).
+- 🚧 Windows support (planned; serial-port detection and testing still to do).
+- 🚧 macOS support (to be explored once Windows path is stable).
 
 ---
 
