@@ -1,0 +1,35 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:kaSeController="clr-namespace:KaSe_Controller"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="KaSe_Controller.SelectWindow"
+        x:Name="main"
+        Title="SelectWindow">
+        <Window.Resources>
+                <kaSeController:KeyConverter x:Key="KeyConverter"/>
+        </Window.Resources>
+    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding ElementName=main,Path=Keys}" DataContext="{Binding ElementName=main,Path=Keys}" >
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Button  Margin="2" Width="100" Height="40" FontSize="12" Click="Button_OnClick" DataContext="{Binding}" >
+                        <Grid>
+                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" >
+                                <TextBlock.Text>
+                                    <Binding Converter="{StaticResource KeyConverter}"/>
+                                </TextBlock.Text>
+                            </TextBlock>
+                        </Grid>
+                    </Button>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal"></WrapPanel>
+                </ItemsPanelTemplate> 
+            </ItemsControl.ItemsPanel>
+        </ItemsControl>     
+    </ScrollViewer>
+</Window>

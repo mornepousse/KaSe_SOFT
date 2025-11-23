@@ -1,0 +1,233 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:kaSeController="clr-namespace:KaSe_Controller"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="KaSe_Controller.MainWindow"
+        x:Name="main"
+        Loaded="Control_OnLoaded"
+        Closed="TopLevel_OnClosed"
+        Title="KaSe_Controller">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition></ColumnDefinition>
+            <ColumnDefinition Width="Auto"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition></RowDefinition>
+            <RowDefinition Height="Auto"></RowDefinition>
+        </Grid.RowDefinitions>
+       
+        <Viewbox Stretch="Uniform" Grid.Row="0" IsEnabled="{Binding ElementName=main,Path=IsOpened}">
+            <Grid x:Name="KeyboardGrid" Width="800" Height="400">
+                <!--<Canvas>
+                    <StackPanel Orientation="Horizontal">
+                        <Canvas>
+                            <StackPanel Orientation="Horizontal">
+                                <StackPanel>
+                                    <kaSeController:Keycap Key="{Binding ElementName=main,Path=Keys[0][4][0]}" />
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][0][0]}" />
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][1][0]}" />
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][2][0]}" />
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][3][0]}" />
+                                </StackPanel>
+                                <StackPanel>
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][4][1]}" />
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][0][1]}" />
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][1][1]}" />
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][2][1]}" />
+                                    <kaSeController:Keycap
+                                        Key="{Binding ElementName=main,Path=Keys[0][3][1]}" />
+                                </StackPanel>
+                                <StackPanel Margin="8,25,0,0">
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <StackPanel.RenderTransform>
+                                        <RotateTransform Angle="5"></RotateTransform>
+                                    </StackPanel.RenderTransform>
+
+                                </StackPanel>
+                                <StackPanel Margin="10,5,0,0">
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <StackPanel.RenderTransform>
+                                        <RotateTransform Angle="10"></RotateTransform>
+                                    </StackPanel.RenderTransform>
+
+                                </StackPanel>
+                                <StackPanel Margin="0,25,0,0">
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <StackPanel.RenderTransform>
+                                        <RotateTransform Angle="10"></RotateTransform>
+                                    </StackPanel.RenderTransform>
+
+                                </StackPanel>
+                                <StackPanel Margin="0,38,0,0">
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <StackPanel.RenderTransform>
+                                        <RotateTransform Angle="10"></RotateTransform>
+                                    </StackPanel.RenderTransform>
+                                </StackPanel>
+
+                                <kaSeController:Keycap Margin="-8,170,0,0">
+                                    <kaSeController:Keycap.RenderTransform>
+                                        <RotateTransform Angle="10" />
+                                    </kaSeController:Keycap.RenderTransform>
+                                </kaSeController:Keycap>
+                            </StackPanel>
+                            <kaSeController:Keycap Width="60" Margin="110,228,0,0" />
+                            <kaSeController:Keycap Margin="174,225,0,0">
+                                <kaSeController:Keycap.RenderTransform>
+                                    <RotateTransform Angle="10" />
+                                </kaSeController:Keycap.RenderTransform>
+                            </kaSeController:Keycap>
+                            <kaSeController:Keycap
+                                Margin="228,240,0,0">
+                                <kaSeController:Keycap.RenderTransform>
+                                    <RotateTransform Angle="20"></RotateTransform>
+                                </kaSeController:Keycap.RenderTransform>
+                            </kaSeController:Keycap>
+                            <kaSeController:Keycap
+                                Margin="280,270,0,0">
+                                <kaSeController:Keycap.RenderTransform>
+                                    <RotateTransform Angle="40"></RotateTransform>
+                                </kaSeController:Keycap.RenderTransform>
+                            </kaSeController:Keycap>
+                            <kaSeController:Keycap
+                                Margin="320,305,0,0">
+                                <kaSeController:Keycap.RenderTransform>
+                                    <RotateTransform Angle="40"></RotateTransform>
+                                </kaSeController:Keycap.RenderTransform>
+                            </kaSeController:Keycap>
+                        </Canvas>
+
+                        <Canvas Margin="420,0,0,0" HorizontalAlignment="Right">
+                            <StackPanel Orientation="Horizontal" Margin="0,290,0,0">
+                                <kaSeController:Keycap />
+                                <kaSeController:Keycap />
+                                <StackPanel.RenderTransform>
+                                    <RotateTransform Angle="-40"></RotateTransform>
+                                </StackPanel.RenderTransform>
+                            </StackPanel>
+                            <kaSeController:Keycap Margin="95,245,0,0">
+                                <kaSeController:Keycap.RenderTransform>
+                                    <RotateTransform Angle="-20"></RotateTransform>
+                                </kaSeController:Keycap.RenderTransform>
+                            </kaSeController:Keycap>
+                            <kaSeController:Keycap Margin="145,230,0,0">
+                                <kaSeController:Keycap.RenderTransform>
+                                    <RotateTransform Angle="-10"></RotateTransform>
+                                </kaSeController:Keycap.RenderTransform>
+                            </kaSeController:Keycap>    
+                            <kaSeController:Keycap Width="60" Margin="200,228,0,0" />
+                            <StackPanel Orientation="Horizontal">
+                                <kaSeController:Keycap Margin="0,170,-8,0">
+                                    <kaSeController:Keycap.RenderTransform>
+                                        <RotateTransform Angle="-10"></RotateTransform>
+                                    </kaSeController:Keycap.RenderTransform>
+                                </kaSeController:Keycap>
+                                <StackPanel Margin="0,38,0,0">
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <StackPanel.RenderTransform>
+                                        <RotateTransform Angle="-10"></RotateTransform>
+                                    </StackPanel.RenderTransform>
+                                </StackPanel>
+                                <StackPanel Margin="0,25,0,0">
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <StackPanel.RenderTransform>
+                                        <RotateTransform Angle="-10"></RotateTransform>
+                                    </StackPanel.RenderTransform>
+                                </StackPanel>
+                                <StackPanel Margin="0,5,10,0">
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <StackPanel.RenderTransform>
+                                        <RotateTransform Angle="-10"></RotateTransform>
+                                    </StackPanel.RenderTransform>
+                                </StackPanel>
+                                <StackPanel Margin="0,25,8,0">
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <StackPanel.RenderTransform>
+                                        <RotateTransform Angle="-5"></RotateTransform>
+                                    </StackPanel.RenderTransform>
+
+                                </StackPanel>
+                                <StackPanel>
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                </StackPanel>
+                                <StackPanel>
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                    <kaSeController:Keycap />
+                                </StackPanel>
+                            </StackPanel>
+
+                        </Canvas>
+                    </StackPanel>
+                </Canvas>-->
+            </Grid>
+
+        </Viewbox>
+        <StackPanel Grid.Row="1" Orientation="Horizontal">
+            <Button Content="connect" Click="ConnectButton_OnClick"></Button>
+            <!-- <Button Content="Help" Click="HelpButton_OnClick"></Button> -->
+            <!-- <Button Content="L1" Click="L1Button_OnClick"></Button> -->
+            <!-- <Button Content="K1" Click="K1Button_OnClick"></Button> -->
+            <!-- <Button Content="KEYSET" Click="KEYSETButton_OnClick"></Button> -->
+            <!-- <Button Content="KEYSET" Click="KEYSETButton_OnClick"></Button> -->
+        </StackPanel>
+        <Grid  Grid.Column="1">
+            <ListBox SelectedIndex="{Binding ElementName=main,Path=CurrentLayer,Mode=TwoWay}" SelectionChanged="SelectingItemsControl_OnSelectionChanged">
+                <ListBoxItem>0</ListBoxItem>
+                <ListBoxItem>1</ListBoxItem>
+                <ListBoxItem>2</ListBoxItem>
+                <ListBoxItem>3</ListBoxItem>
+                <ListBoxItem>4</ListBoxItem>
+                <ListBoxItem>5</ListBoxItem>
+                <ListBoxItem>6</ListBoxItem>
+                <ListBoxItem>7</ListBoxItem>
+                <ListBoxItem>8</ListBoxItem>
+                <ListBoxItem>9</ListBoxItem>
+            </ListBox>
+        </Grid>
+        <Grid Grid.Row="1" Grid.ColumnSpan="2">
+            
+        </Grid>
+    </Grid>
+</Window>

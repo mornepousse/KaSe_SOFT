@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" Width="50" Height="50"
+             x:Class="KaSe_Controller.Keycap" x:Name="main">
+    <Button Click="Button_OnClick" Width="46" Height="46" Background="Gray" BorderBrush="Black" BorderThickness="1" Margin="2">
+        <Button.Content>
+            <Grid>
+                <!-- <TextBlock FontSize="8" VerticalAlignment="Top" HorizontalAlignment="Left" -->
+                <!--            Text="{Binding ElementName=main,Path=Row}" /> -->
+                <!-- <TextBlock FontSize="8" VerticalAlignment="Top" HorizontalAlignment="Right" -->
+                <!--            Text="{Binding ElementName=main,Path=Column}" /> -->
+                <TextBlock FontSize="7" VerticalAlignment="Center" HorizontalAlignment="Center"
+                           Text="{Binding ElementName=main,Path=KeyString}" TextWrapping="Wrap" />
+            </Grid>
+        </Button.Content>
+    </Button>
+</UserControl>
