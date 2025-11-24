@@ -1,4 +1,6 @@
 using System;
+using System.Linq;
+using System.Management;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
@@ -283,28 +285,87 @@ public class SerialPortManager : INotifyPropertyChanged
     
     public bool CheckPort(string portName)
     {
-        try
+        if (OperatingSystem.IsLinux())
         {
-            string com = "udevadm info -n" + portName + " | grep 'ID_MODEL=KaSeV2'";
-            ProcessStartInfo psi = new ProcessStartInfo
+            try
             {
-                FileName = "/bin/bash",
-                Arguments = $"-c \"{com}\"",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using (Process process = Process.Start(psi))
+                string com = "udevadm info -n" + portName + " | grep 'ID_MODEL=KaSeV2'";
+                ProcessStartInfo psi = new ProcessStartInfo
+                {
+                    FileName = "/bin/bash",
+                    Arguments = $"-c \"{com}\"",
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                };
+                using (Process process = Process.Start(psi))
+                {
+                    string result = process.StandardOutput.ReadToEnd();
+                    process.WaitForExit();
+                    return result.Contains("KaSeV2");
+                }
+            }
+            catch
             {
-                string result = process.StandardOutput.ReadToEnd();
-                process.WaitForExit();
-                return result.Contains("KaSeV2");
+                return false;
             }
         }
-        catch
+
+        if (OperatingSystem.IsWindows())
         {
+            try
+            {
+                const string targetVid = "CAFE";
+                const string targetPid = "4001";
+
+                using var searcher = new ManagementObjectSearcher(
+                    "SELECT * FROM Win32_PnPEntity WHERE Name LIKE '%(COM%'");
+
+                foreach (var dev in searcher.Get().Cast<ManagementObject>())
+                {
+                    var name = (dev["Name"] as string) ?? string.Empty;
+                    var deviceId = (dev["DeviceID"] as string) ?? string.Empty;
+
+                    Console.WriteLine($"DEBUG PnP: {name} | {deviceId}");
+
+                    var vid = Extract(deviceId, "VID_");
+                    var pid = Extract(deviceId, "PID_");
+
+                    bool vidPidMatch =
+                        string.Equals(vid, targetVid, StringComparison.OrdinalIgnoreCase) &&
+                        string.Equals(pid, targetPid, StringComparison.OrdinalIgnoreCase);
+
+                    if (!vidPidMatch && !name.Contains("KaSe CDC", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    var com = Between(name, "(COM", ")");
+                    if (!string.IsNullOrEmpty(com) &&
+                        string.Equals(com, portName, StringComparison.OrdinalIgnoreCase))
+                        return true;
+                }
+            }
+            catch
+            {
+                return false;
+            }
             return false;
         }
+        return false;
     }
-    
+
+    private static string Extract(string source, string token)
+    {
+        var i = source.IndexOf(token, StringComparison.OrdinalIgnoreCase);
+        return i < 0 || i + token.Length + 4 > source.Length
+            ? string.Empty
+            : source.Substring(i + token.Length, 4);
+    }
+
+    private static string Between(string source, string start, string end)
+    {
+        var i = source.IndexOf(start, StringComparison.OrdinalIgnoreCase);
+        if (i < 0) return string.Empty;
+        var j = source.IndexOf(end, i, StringComparison.OrdinalIgnoreCase);
+        return j <= i ? string.Empty : source.Substring(i + 1, j - i - 1);
+    }    
 }
