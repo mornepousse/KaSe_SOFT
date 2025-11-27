@@ -235,6 +235,8 @@ also touch the firmware (`KaSe_Code`) or hardware (`KaSe_PCB`).
 - 🚧 macOS support (to be explored once Windows path is stable).
 - 🚧 Macros
 - 🚧 Rename layers
+- 🚧 Research Key
+- 🚧 other confort
 
 ---
 
