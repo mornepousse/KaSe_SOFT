@@ -231,7 +231,7 @@ also touch the firmware (`KaSe_Code`) or hardware (`KaSe_PCB`).
 ### Roadmap (short)
 
 - ✅ Linux support (tested with udev-based serial detection).
-- 🚧 Windows support (planned; serial-port detection and testing still to do).
+- ✅ Windows support (planned; serial-port detection and testing still to do).
 - 🚧 macOS support (to be explored once Windows path is stable).
 
 ---
