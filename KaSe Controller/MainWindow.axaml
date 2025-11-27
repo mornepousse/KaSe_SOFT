@@ -206,6 +206,14 @@
         </Viewbox>
         <StackPanel Grid.Row="1" Orientation="Horizontal">
             <Button Content="connect" Click="ConnectButton_OnClick"></Button>
+            <Button Content="Flash" Click="FlashButton_OnClick" Margin="8,0,0,0"></Button>
+            <Button Content="Installer outils" Click="InstallToolsButton_OnClick" Margin="8,0,0,0"></Button>
+            <Grid Grid.Row="1" Grid.ColumnSpan="2">
+                <StackPanel Orientation="Vertical" Margin="8,40,8,8">
+                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding ElementName=main, Path=ProgressValue}" Height="18" />
+                    <TextBox Name="FlashLog" AcceptsReturn="True" Height="80" IsReadOnly="True"/>
+                </StackPanel>
+            </Grid>
             <!-- <Button Content="Help" Click="HelpButton_OnClick"></Button> -->
             <!-- <Button Content="L1" Click="L1Button_OnClick"></Button> -->
             <!-- <Button Content="K1" Click="K1Button_OnClick"></Button> -->
@@ -226,8 +234,6 @@
                 <ListBoxItem>9</ListBoxItem>
             </ListBox>
         </Grid>
-        <Grid Grid.Row="1" Grid.ColumnSpan="2">
-            
-        </Grid>
+        
     </Grid>
 </Window>

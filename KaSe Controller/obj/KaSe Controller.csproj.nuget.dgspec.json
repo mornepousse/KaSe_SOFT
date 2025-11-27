@@ -53,6 +53,8 @@
               "version": "[11.3.0, )"
             },
             "Avalonia.Diagnostics": {
+              "include": "None",
+              "suppressParent": "All",
               "target": "Package",
               "version": "[11.3.0, )"
             },
@@ -67,6 +69,10 @@
             "System.IO.Ports": {
               "target": "Package",
               "version": "[10.0.0-preview.7.25380.108, )"
+            },
+            "System.Management": {
+              "target": "Package",
+              "version": "[10.0.0, )"
             }
           },
           "imports": [

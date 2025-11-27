@@ -7,6 +7,8 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO.Ports;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace KaSe_Controller;
 
@@ -34,6 +36,15 @@ public class SerialPortManager : INotifyPropertyChanged
     #endregion event
     private SerialPort _serialPort;
     private List<byte> data = new List<byte>();
+
+    // Indicateur simple pour l'UI lorsqu'un flash est en cours
+    private bool _isFlashing = false;
+    public bool IsFlashing
+    {
+        get => _isFlashing;
+        private set { _isFlashing = value; OnPropertyChanged(nameof(IsFlashing)); }
+    }
+
     public SerialPortManager()
     {
         
@@ -268,6 +279,25 @@ public class SerialPortManager : INotifyPropertyChanged
     {
         Console.WriteLine("Set Key " + layer + " " + row + " " + col + " " + key + " " + Convert.ToInt16(key).ToString("X"));
         SendCommand($"SETKEY {layer},{row},{col},{Convert.ToInt16(key).ToString("X")}");
+    }
+
+    // Nouvelle méthode pour lancer le flash via EspFlasher
+    public async Task<FlashResult> FlashFirmwareAsync(string port, string firmwarePath, FlashOptions? options = null, IProgress<string>? progressText = null, IProgress<int>? progressPercent = null, CancellationToken cancellationToken = default)
+    {
+        if (IsFlashing)
+            return new FlashResult { Success = false, Message = "Un flash est déjà en cours" };
+
+        try
+        {
+            IsFlashing = true;
+            var flasher = new EspFlasher();
+            var result = await flasher.FlashFirmwareAsync(port, firmwarePath, options, progressText, progressPercent, cancellationToken);
+            return result;
+        }
+        finally
+        {
+            IsFlashing = false;
+        }
     }
    
     public string GetKeyboardPort()
