@@ -15,11 +15,20 @@
             <ColumnDefinition Width="Auto"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition></RowDefinition>
-            <RowDefinition Height="Auto"></RowDefinition>
+            <RowDefinition Height="30"></RowDefinition>
+            <RowDefinition ></RowDefinition>
+            <RowDefinition Height="Auto" ></RowDefinition>
         </Grid.RowDefinitions>
-       
-        <Viewbox Stretch="Uniform" Grid.Row="0" IsEnabled="{Binding ElementName=main,Path=IsOpened}">
+        <StackPanel Grid.Row="0" Orientation="Horizontal">
+            <Button Content="connect" Click="ConnectButton_OnClick"></Button>
+            
+            <!-- <Button Content="Help" Click="HelpButton_OnClick"></Button> -->
+            <!-- <Button Content="L1" Click="L1Button_OnClick"></Button> -->
+            <!-- <Button Content="K1" Click="K1Button_OnClick"></Button> -->
+            <!-- <Button Content="KEYSET" Click="KEYSETButton_OnClick"></Button> -->
+            <!-- <Button Content="KEYSET" Click="KEYSETButton_OnClick"></Button> -->
+        </StackPanel>
+        <Viewbox Stretch="Uniform" Grid.Row="1" IsEnabled="{Binding ElementName=main,Path=IsOpened}">
             <Grid x:Name="KeyboardGrid" Width="800" Height="400">
                 <!--<Canvas>
                     <StackPanel Orientation="Horizontal">
@@ -204,23 +213,8 @@
             </Grid>
 
         </Viewbox>
-        <StackPanel Grid.Row="1" Orientation="Horizontal">
-            <Button Content="connect" Click="ConnectButton_OnClick"></Button>
-            <Button Content="Flash" Click="FlashButton_OnClick" Margin="8,0,0,0"></Button>
-            <Button Content="Installer outils" Click="InstallToolsButton_OnClick" Margin="8,0,0,0"></Button>
-            <Grid Grid.Row="1" Grid.ColumnSpan="2">
-                <StackPanel Orientation="Vertical" Margin="8,40,8,8">
-                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding ElementName=main, Path=ProgressValue}" Height="18" />
-                    <TextBox Name="FlashLog" AcceptsReturn="True" Height="80" IsReadOnly="True"/>
-                </StackPanel>
-            </Grid>
-            <!-- <Button Content="Help" Click="HelpButton_OnClick"></Button> -->
-            <!-- <Button Content="L1" Click="L1Button_OnClick"></Button> -->
-            <!-- <Button Content="K1" Click="K1Button_OnClick"></Button> -->
-            <!-- <Button Content="KEYSET" Click="KEYSETButton_OnClick"></Button> -->
-            <!-- <Button Content="KEYSET" Click="KEYSETButton_OnClick"></Button> -->
-        </StackPanel>
-        <Grid  Grid.Column="1">
+       
+        <Grid  Grid.Column="1" Grid.RowSpan="2">
             <ListBox SelectedIndex="{Binding ElementName=main,Path=CurrentLayer,Mode=TwoWay}" SelectionChanged="SelectingItemsControl_OnSelectionChanged">
                 <ListBoxItem>0</ListBoxItem>
                 <ListBoxItem>1</ListBoxItem>
@@ -233,6 +227,22 @@
                 <ListBoxItem>8</ListBoxItem>
                 <ListBoxItem>9</ListBoxItem>
             </ListBox>
+        </Grid>
+        
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="Auto"></ColumnDefinition>
+                <ColumnDefinition Width="*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+            <Button Grid.Column="0" Content="Flash" Click="FlashButton_OnClick" Margin="8,0,0,0"></Button>
+            <Button Grid.Column="1" Content="Installer outils" Click="InstallToolsButton_OnClick" Margin="8,0,0,0"></Button>
+            <Grid Grid.Column="2" >
+                <StackPanel Orientation="Vertical" Margin="8,40,8,8">
+                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding ElementName=main, Path=ProgressValue}" Height="18" />
+                    <TextBox Name="FlashLog" AcceptsReturn="True" Height="80" IsReadOnly="True"/>
+                </StackPanel>
+            </Grid>
         </Grid>
         
     </Grid>
