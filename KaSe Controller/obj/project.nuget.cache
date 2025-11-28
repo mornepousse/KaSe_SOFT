@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "vTdUWIGEN+Q=",
+  "dgSpecHash": "wtYe2FN7zmk=",
   "success": true,
   "projectFilePath": "/home/mae/Documents/GitHub/KaSe_SOFT/KaSe Controller/KaSe Controller.csproj",
   "expectedPackageFiles": [
@@ -48,7 +48,6 @@
     "/home/mae/.nuget/packages/skiasharp.nativeassets.webassembly/2.88.9/skiasharp.nativeassets.webassembly.2.88.9.nupkg.sha512",
     "/home/mae/.nuget/packages/skiasharp.nativeassets.win32/2.88.9/skiasharp.nativeassets.win32.2.88.9.nupkg.sha512",
     "/home/mae/.nuget/packages/system.codedom/10.0.0/system.codedom.10.0.0.nupkg.sha512",
-    "/home/mae/.nuget/packages/system.io.pipelines/8.0.0/system.io.pipelines.8.0.0.nupkg.sha512",
     "/home/mae/.nuget/packages/system.io.ports/10.0.0-preview.7.25380.108/system.io.ports.10.0.0-preview.7.25380.108.nupkg.sha512",
     "/home/mae/.nuget/packages/system.management/10.0.0/system.management.10.0.0.nupkg.sha512",
     "/home/mae/.nuget/packages/tmds.dbus.protocol/0.21.2/tmds.dbus.protocol.0.21.2.nupkg.sha512"
