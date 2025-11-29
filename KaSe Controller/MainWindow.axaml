@@ -9,19 +9,22 @@
         Loaded="Control_OnLoaded"
         Closed="TopLevel_OnClosed"
         Title="KaSe_Controller">
-    <Grid>
+    <TabControl>
+        <TabItem Header="Keyboard">
+               <Grid >
         <Grid.ColumnDefinitions>
             <ColumnDefinition></ColumnDefinition>
-            <ColumnDefinition Width="Auto"></ColumnDefinition>
+            <ColumnDefinition Width="auto"></ColumnDefinition>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="30"></RowDefinition>
             <RowDefinition ></RowDefinition>
-            <RowDefinition Height="Auto" ></RowDefinition>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Orientation="Horizontal">
             <Button Content="connect" Click="ConnectButton_OnClick"></Button>
-            
+            <Grid Width="30"></Grid>
+            <TextBox IsEnabled="{Binding ElementName=main,Path=IsOpened}" Text="{Binding ElementName=main,Path=SelectedLayoutName}" MinWidth="30"></TextBox>
+            <Button IsEnabled="{Binding ElementName=main,Path=IsOpened}" Margin="5,0" Content="Set" Click="Button_OnClickSetLayoutName"></Button>
             <!-- <Button Content="Help" Click="HelpButton_OnClick"></Button> -->
             <!-- <Button Content="L1" Click="L1Button_OnClick"></Button> -->
             <!-- <Button Content="K1" Click="K1Button_OnClick"></Button> -->
@@ -214,36 +217,50 @@
 
         </Viewbox>
        
-        <Grid  Grid.Column="1" Grid.RowSpan="2">
-            <ListBox SelectedIndex="{Binding ElementName=main,Path=CurrentLayer,Mode=TwoWay}" SelectionChanged="SelectingItemsControl_OnSelectionChanged">
-                <ListBoxItem>0</ListBoxItem>
-                <ListBoxItem>1</ListBoxItem>
-                <ListBoxItem>2</ListBoxItem>
-                <ListBoxItem>3</ListBoxItem>
-                <ListBoxItem>4</ListBoxItem>
-                <ListBoxItem>5</ListBoxItem>
-                <ListBoxItem>6</ListBoxItem>
-                <ListBoxItem>7</ListBoxItem>
-                <ListBoxItem>8</ListBoxItem>
-                <ListBoxItem>9</ListBoxItem>
+        <Grid  Grid.Column="1" Grid.RowSpan="2" IsEnabled="{Binding ElementName=main,Path=IsOpened}">
+            <ListBox SelectedIndex="{Binding ElementName=main,Path=CurrentLayer,Mode=TwoWay}" SelectionChanged="SelectingItemsControl_OnSelectionChanged"
+                     DataContext="{Binding ElementName=main,Path=LayoutsName}"
+                     ItemsSource="{Binding ElementName=main,Path=LayoutsName}">
             </ListBox>
         </Grid>
         
-        <Grid Grid.Row="2">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-                <ColumnDefinition Width="Auto"></ColumnDefinition>
-                <ColumnDefinition Width="*"></ColumnDefinition>
-            </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" Content="Flash" Click="FlashButton_OnClick" Margin="8,0,0,0"></Button>
-            <Button Grid.Column="1" Content="Installer outils" Click="InstallToolsButton_OnClick" Margin="8,0,0,0"></Button>
-            <Grid Grid.Column="2" >
-                <StackPanel Orientation="Vertical" Margin="8,40,8,8">
-                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding ElementName=main, Path=ProgressValue}" Height="18" />
-                    <TextBox Name="FlashLog" AcceptsReturn="True" Height="80" IsReadOnly="True"/>
-                </StackPanel>
-            </Grid>
-        </Grid>
+        
         
     </Grid>
+        </TabItem>
+        
+        <TabItem Header="Macros">
+            <Grid>
+                <ListBox DataContext="{Binding ElementName=main,Path=Macros,Mode=TwoWay}"
+                         ItemsSource="{Binding ElementName=main,Path=Macros, Mode=TwoWay}"
+                         SelectedItem="{Binding ElementName=main,Path=SelectedMacro,Mode=TwoWay}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid> 
+                                <TextBlock Text="{Binding Name }"></TextBlock>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </Grid>
+        </TabItem>
+        
+        <TabItem Header="Tools">
+            <Grid Grid.Row="2">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    <ColumnDefinition Width="*"></ColumnDefinition>
+                </Grid.ColumnDefinitions>
+                <Button Grid.Column="0" Content="Flash" Click="FlashButton_OnClick" Margin="8,0,0,0"></Button>
+                <Button Grid.Column="1" Content="Installer outils" Click="InstallToolsButton_OnClick" Margin="8,0,0,0"></Button>
+                <Grid Grid.Column="2" >
+                    <StackPanel Orientation="Vertical" Margin="8,40,8,8">
+                        <ProgressBar Minimum="0" Maximum="100" Value="{Binding ElementName=main, Path=ProgressValue}" Height="18" />
+                        <TextBox Name="FlashLog" AcceptsReturn="True" Height="80" IsReadOnly="True"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>   
+        </TabItem>
+    </TabControl>
 </Window>

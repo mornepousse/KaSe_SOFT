@@ -5,6 +5,7 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -46,6 +47,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    public ObservableCollection<string> LayoutsName
+    {
+        get { return App.LayoutsName; }
+        set { App.LayoutsName = value; OnPropertyChanged();}
+    }
+    
     private bool isPortOpen = false;
     public bool IsOpened
     {
@@ -65,9 +72,52 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (value >= 0 && value < App.Keys.Count)
             {
                 App.CurrentLayer = value;
+                SelectedLayoutName = App.LayoutsName[App.CurrentLayer];
                 OnPropertyChanged();
             }
         }
+    }
+    
+    private string _selectedLayoutName = "QWERTY";
+    public string SelectedLayoutName
+    {
+        get { return _selectedLayoutName; }
+        set
+        {
+            // sanitize incoming layout name: remove special characters, collapse spaces
+            _selectedLayoutName = SanitizeLayoutName(value);
+            OnPropertyChanged();
+        }
+    }
+    
+    public ObservableCollection<MacroInfo> Macros
+    {
+        get { return App.Macros; }
+        set { App.Macros = value; OnPropertyChanged(); }
+    }
+    
+    private MacroInfo _selectedMacro = new MacroInfo();
+    public MacroInfo SelectedMacro
+    {
+        get { return _selectedMacro; }
+        set
+        {
+            _selectedMacro = value;
+            OnPropertyChanged();
+        }
+    }
+    
+    // helper: allow only letters, digits, space, underscore and hyphen; collapse multiple spaces and trim
+    private static string SanitizeLayoutName(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+            return string.Empty;
+
+        // remove characters not in the allowed set
+        var cleaned = Regex.Replace(input, "[^A-Za-z0-9 _-]", string.Empty);
+        // collapse consecutive whitespace to single space
+        cleaned = Regex.Replace(cleaned, "\\s+", " ").Trim();
+        return cleaned;
     }
      
     public MainWindow()
@@ -244,6 +294,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (App.SerialPortManager.IsPortOpen)
             {
                 App.SerialPortManager.GetKeymap(CurrentLayer);
+                App.SerialPortManager.GetLayersName();
+                App.SerialPortManager.GetMacros();
                 IsOpened = true;
             }
         }
@@ -456,5 +508,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         await dlg.ShowDialog(this);
         await tcs.Task;
+    }
+
+    private void Button_OnClickSetLayoutName(object? sender, RoutedEventArgs e)
+    {
+        if (App.SerialPortManager.IsPortOpen)
+        {
+            if (!string.IsNullOrWhiteSpace(SelectedLayoutName) && SelectedLayoutName.Length <= 16 && SelectedLayoutName.Length >= 3)
+            {
+                App.LayoutsName[CurrentLayer] = SelectedLayoutName;
+                App.SerialPortManager.SetLayerName(CurrentLayer, SelectedLayoutName.ToString());
+                App.SerialPortManager.GetLayersName();
+            }
+            else
+            {
+                
+            }
+        }
     }
 }

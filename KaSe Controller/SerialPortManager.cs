@@ -9,8 +9,10 @@ using System.IO.Ports;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text;
 
 namespace KaSe_Controller;
+
 
 enum CommandStat
 {
@@ -24,6 +26,8 @@ enum cdc_command_type
     c_get_layer_t,
     c_get_current_layer_index_t,
     c_get_name_layer_t,
+    c_get_macros_t,
+    c_get_all_layout_names_t,
     c_ping_t,
     c_debug_t,
 
@@ -162,10 +166,32 @@ public class SerialPortManager : INotifyPropertyChanged
                     }
                     App.UpdateKey();
                     break;
-                case cdc_command_type.c_get_name_layer_t :
+                case cdc_command_type.c_get_all_layout_names_t :
+                        Console.WriteLine("get name layers");
+                        List<string> names = new List<string>();
+                        string allNames = System.Text.Encoding.ASCII.GetString(commandData.ToArray());
+                        names = allNames.Split(';').ToList();
+                        for (int n = 0; n < names.Count && n < App.MaxLayers; n++)
+                        {
+                            App.LayoutsName[n] = names[n].Substring(1); // Remove possible leading character
+                            Console.WriteLine("Layer " + n + " Name: " + names[n]);
+                        } 
                     break;
                 case cdc_command_type.c_ping_t :
                     Console.WriteLine("Ping received");
+                    break;
+                case cdc_command_type.c_get_macros_t :
+                    // Binary payload from MCU (cmd_list_macros):
+                    // [count (1 byte)]
+                    // For each macro:
+                    //   [index (1 byte)]
+                    //   [keycode (2 bytes, LE)]
+                    //   [nameLen (1 byte)]
+                    //   [name (nameLen bytes)]
+                    //   [keysLen (1 byte)]
+                    //   [keys (keysLen bytes)]
+                    Console.WriteLine("Macros payload received (" + commandData.Count + " bytes)");
+                    ParseMacrosPayload(commandData);
                     break;
                 case cdc_command_type.c_debug_t :
                     Console.WriteLine("Debug: " + System.Text.Encoding.ASCII.GetString(commandData.ToArray()));
@@ -253,13 +279,6 @@ public class SerialPortManager : INotifyPropertyChanged
     {
         Console.WriteLine("Get Layer " + layer);
         SendCommand($"L{layer}");
-        // byte[] com = new byte[6];
-        // com[0] = (byte)'C';
-        // com[1] = (byte)'>';
-        // com[2] = (byte)cdc_command_type.c_get_name_layer_t;
-        // com[3] = 0;
-        // com[4] = 1;
-        // com[5] = (byte)layer;
     }
     private void SendCommand(string command)
     {
@@ -272,15 +291,35 @@ public class SerialPortManager : INotifyPropertyChanged
     public void GetKeymap(int layer)
     {
         Console.WriteLine("Get Keymap " + layer);
-        //Send_Command(cdc_command_type.c_get_layer_t, new byte[]{(byte)layer});
         SendCommand($"KEYMAP{layer}");
     }
+
+    public void GetLayersName()
+    {
+        Console.WriteLine("Get Layers name ");
+        SendCommand("LAYOUTS?");
+    }
+    
+    public void GetMacros()
+    {
+        Console.WriteLine("Get Macros ");
+        SendCommand("MACROS?");
+    }
+    
     public void SetKey(int layer, int row, int col, K_Keys key)
     {
         Console.WriteLine("Set Key " + layer + " " + row + " " + col + " " + key + " " + Convert.ToInt16(key).ToString("X"));
         SendCommand($"SETKEY {layer},{row},{col},{Convert.ToInt16(key).ToString("X")}");
     }
 
+    // Commande: LAYOUTNAME<layer>:<nouveau_nom>
+    // Exemple: LAYOUTNAME0:AZERTY_FR
+    public void SetLayerName(int CurrentLayer, string SelectedLayoutName)
+    {
+        Console.WriteLine($"LAYOUTNAME{CurrentLayer}:{SelectedLayoutName}");
+        SendCommand($"LAYOUTNAME{CurrentLayer}:{SelectedLayoutName}");
+    }
+    
     // Nouvelle méthode pour lancer le flash via EspFlasher
     public async Task<FlashResult> FlashFirmwareAsync(string port, string firmwarePath, FlashOptions? options = null, IProgress<string>? progressText = null, IProgress<int>? progressPercent = null, CancellationToken cancellationToken = default)
     {
@@ -398,4 +437,99 @@ public class SerialPortManager : INotifyPropertyChanged
         var j = source.IndexOf(end, i, StringComparison.OrdinalIgnoreCase);
         return j <= i ? string.Empty : source.Substring(i + 1, j - i - 1);
     }    
+
+    // Parsed macros list accessible from the app
+    
+
+    private void ParseMacrosPayload(List<byte> payload)
+    {
+        App.Macros.Clear();
+        if (payload == null || payload.Count == 0)
+        {
+            Console.WriteLine("No macro payload.");
+            return;
+        }
+
+        int offset = 0;
+        if (offset + 1 > payload.Count)
+        {
+            Console.WriteLine("Invalid macro payload: missing count");
+            return;
+        }
+
+        byte count = payload[offset++];
+        Console.WriteLine($"Expected macros count: {count}");
+
+        int parsed = 0;
+        while (offset < payload.Count && parsed < count)
+        {
+            // index
+            if (offset + 1 > payload.Count)
+            {
+                Console.WriteLine("Truncated payload while reading index");
+                break;
+            }
+            byte idx = payload[offset++];
+
+            // keycode (2 bytes LE)
+            if (offset + 2 > payload.Count)
+            {
+                Console.WriteLine("Truncated payload while reading keycode");
+                break;
+            }
+            ushort kc = (ushort)(payload[offset] | (payload[offset + 1] << 8));
+            offset += 2;
+
+            // name length
+            if (offset + 1 > payload.Count)
+            {
+                Console.WriteLine("Truncated payload while reading name length");
+                break;
+            }
+            byte nameLen = payload[offset++];
+
+            if (offset + nameLen > payload.Count)
+            {
+                Console.WriteLine("Truncated payload while reading name");
+                break;
+            }
+            string name = Encoding.ASCII.GetString(payload.GetRange(offset, nameLen).ToArray());
+            offset += nameLen;
+
+            // keys length
+            if (offset + 1 > payload.Count)
+            {
+                Console.WriteLine("Truncated payload while reading keys length");
+                break;
+            }
+            byte keysLen = payload[offset++];
+
+            if (offset + keysLen > payload.Count)
+            {
+                Console.WriteLine("Truncated payload while reading keys");
+                break;
+            }
+
+            var keys = new List<byte>();
+            for (int k = 0; k < keysLen; k++)
+            {
+                keys.Add(payload[offset + k]);
+            }
+            offset += keysLen;
+
+            var mi = new MacroInfo
+            {
+                Index = idx,
+                Keycode = kc,
+                Name = name,
+                Keys = keys
+            };
+            App.Macros.Add(mi);
+
+            Console.WriteLine($"Parsed macro idx={mi.Index}, kc=0x{mi.Keycode:X4}, name='{mi.Name}', keysLen={mi.Keys.Count}");
+            parsed++;
+        }
+
+        Console.WriteLine($"Total macros parsed: {App.Macros.Count}");
+    }
 }

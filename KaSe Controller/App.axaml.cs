@@ -12,8 +12,7 @@ public partial class App : Application
     
     public static void UpdateKey() {
         UpdateKeyEvent?.Invoke();
-    }
-    
+    } 
     private static ObservableCollection<ObservableCollection<ObservableCollection<K_Keys>>> keys =
         new ObservableCollection<ObservableCollection<ObservableCollection<K_Keys>>>()
         {
@@ -89,6 +88,34 @@ public partial class App : Application
     {
         get { return cols; }
         set { cols = value; }
+    }
+
+    private static ObservableCollection<string> layoutsName = new ObservableCollection<string>()
+    {
+        "LAYER0",
+        "LAYER1",
+        "LAYER2",
+        "LAYER3",
+        "LAYER4",
+        "LAYER5",
+        "LAYER6",
+        "LAYER7",
+        "LAYER8",
+        "LAYER9",
+    };
+    
+    public  static ObservableCollection<string> LayoutsName
+    {
+        get { return layoutsName; }
+        set { layoutsName = value; }
+    }
+    
+    private static ObservableCollection<MacroInfo> macros = new ObservableCollection<MacroInfo>();
+
+    public static ObservableCollection<MacroInfo> Macros
+    {
+        get { return macros; }
+        set { macros = value; }
     }
     
     public override void Initialize()

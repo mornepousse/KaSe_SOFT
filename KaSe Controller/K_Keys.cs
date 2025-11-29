@@ -556,5 +556,6 @@ BT_PREV_DEVICE               = 0x2C00,
 BT_RECONNECT_LAST            = 0x2D00,
 
 BT_SWITCH_DEVICE             = 0x2E00, // switch wire to bluetooth or bluetooth to wire
+BT_TOGGLE                    = 0x2F00 
  
  }
