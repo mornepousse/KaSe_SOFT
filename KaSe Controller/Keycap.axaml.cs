@@ -33,6 +33,7 @@ public partial class Keycap : UserControl, INotifyPropertyChanged
         set
         {
             SetValue(KeyProperty, value);
+            GetExtraName();
             OnPropertyChanged(nameof(KeyString));
         }
     }
@@ -65,6 +66,29 @@ public partial class Keycap : UserControl, INotifyPropertyChanged
             
         }
     }
+    
+    private string extraName = "";
+
+    public string ExtraName
+    {
+        get => extraName;
+        set
+        {
+            extraName = value;
+            OnPropertyChanged();
+            OnPropertyChanged(nameof(IsExtraNameVisible));
+        }
+    }
+    
+    public bool IsExtraNameVisible
+    {
+        get => !string.IsNullOrEmpty(ExtraName);
+        set
+        {
+            OnPropertyChanged();
+        }
+    }
+    
     DispatcherTimer _timer = new DispatcherTimer();
     public Keycap()
     {
@@ -106,5 +130,60 @@ public partial class Keycap : UserControl, INotifyPropertyChanged
             App.SerialPortManager.SetKey(App.CurrentLayer, Row, Column, selectWindow.SelectedKey);    
         }
         
+    }
+
+    private void GetExtraName()
+    {
+        string nametmp = Key.ToString();
+        if(nametmp.Contains("MACRO_"))
+        {
+            string indexStr = nametmp.Replace("MACRO_", "");
+            if (int.TryParse(indexStr, out int index))
+            {
+                //var macro = App.SerialPortManager.GetMacroByKeycode((ushort)index);
+                MacroInfo macro = null;
+                foreach (MacroInfo macroInfo in App.Macros)
+                {
+                    if (macroInfo.Keycode == (ushort)index)
+                    {
+                        macro = macroInfo;
+                        break;
+                    }
+                }
+                
+                if (macro != null)
+                {
+                    ExtraName = macro.Name;
+                }
+                else
+                {
+                    ExtraName = "";
+                }
+            }
+        }
+        else
+        {
+            ExtraName = "";
+        }
+        if(nametmp.Contains("TO_L") || nametmp.Contains("MO_L"))
+        {
+            string indexStr = nametmp.Replace("TO_L", "").Replace("MO_L", "");
+            if (int.TryParse(indexStr, out int index))
+            {
+                if (index >= 0 && index < App.LayoutsName.Count)
+                {
+                    ExtraName = App.LayoutsName[index];
+                }
+                else
+                {
+                    ExtraName = "";
+                }
+            }
+        }
+    }
+
+    private void Control_OnLoaded(object? sender, RoutedEventArgs e)
+    {
+        GetExtraName();
     }
 }
