@@ -144,7 +144,7 @@ public partial class Keycap : UserControl, INotifyPropertyChanged
                 MacroInfo macro = null;
                 foreach (MacroInfo macroInfo in App.Macros)
                 {
-                    if (macroInfo.Keycode == (ushort)index)
+                    if (macroInfo.Keycode == (K_Keys)index)
                     {
                         macro = macroInfo;
                         break;

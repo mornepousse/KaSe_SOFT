@@ -90,22 +90,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
     
-    public ObservableCollection<MacroInfo> Macros
-    {
-        get { return App.Macros; }
-        set { App.Macros = value; OnPropertyChanged(); }
-    }
     
-    private MacroInfo _selectedMacro = new MacroInfo();
-    public MacroInfo SelectedMacro
-    {
-        get { return _selectedMacro; }
-        set
-        {
-            _selectedMacro = value;
-            OnPropertyChanged();
-        }
-    }
     
     // helper: allow only letters, digits, space, underscore and hyphen; collapse multiple spaces and trim
     private static string SanitizeLayoutName(string input)
@@ -526,4 +511,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             }
         }
     }
+
+    
 }

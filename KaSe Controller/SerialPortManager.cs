@@ -477,7 +477,7 @@ public class SerialPortManager : INotifyPropertyChanged
                 Console.WriteLine("Truncated payload while reading keycode");
                 break;
             }
-            ushort kc = (ushort)(payload[offset] | (payload[offset + 1] << 8));
+            K_Keys kc = (K_Keys)(payload[offset] | (payload[offset + 1] << 8));
             offset += 2;
 
             // name length
@@ -510,10 +510,10 @@ public class SerialPortManager : INotifyPropertyChanged
                 break;
             }
 
-            var keys = new List<byte>();
+            var keys = new ObservableCollection<K_Keys>();
             for (int k = 0; k < keysLen; k++)
             {
-                keys.Add(payload[offset + k]);
+                keys.Add((K_Keys)payload[offset + k]);
             }
             offset += keysLen;
 
@@ -526,10 +526,144 @@ public class SerialPortManager : INotifyPropertyChanged
             };
             App.Macros.Add(mi);
 
-            Console.WriteLine($"Parsed macro idx={mi.Index}, kc=0x{mi.Keycode:X4}, name='{mi.Name}', keysLen={mi.Keys.Count}");
+            //Console.WriteLine($"Parsed macro idx={mi.Index}, kc=0x{mi.Keycode:X4}, name='{mi.Name}', keysLen={mi.Keys.Count}");
             parsed++;
         }
 
         Console.WriteLine($"Total macros parsed: {App.Macros.Count}");
     }
+    
+    public void AddMacro(MacroInfo macro)
+    {
+        Console.WriteLine("Add Macro " + (macro?.Name ?? "(null)"));
+        if (macro == null)
+        {
+            Console.WriteLine("Macro is null");
+            return;
+        }
+
+        if (!IsPortOpen)
+        {
+            Console.WriteLine("Cannot add macro: serial port not open");
+            return;
+        }
+
+        // Validate slot/index
+        int slot = macro.Index;
+        if (slot < 0)
+        {
+            Console.WriteLine("Invalid macro slot: " + slot);
+            return;
+        }
+
+        // Sanitize name: remove command delimiters and control chars that would break parsing on MCU
+        string name = macro.Name ?? string.Empty;
+        // Remove semicolons and commas (used as separators) and newlines/carriage returns
+        var banned = new char[] { ';', '\n', '\r' };
+        foreach (var c in banned)
+            name = name.Replace(c, ' ');
+        name = name.Trim();
+
+        if (name.Length == 0)
+        {
+            Console.WriteLine("Macro name is empty after sanitization");
+            return;
+        }
+
+        // Limit name length to a reasonable size (MCU code limits name length to 255, but keep smaller for safety)
+        const int MaxNameLen = 128;
+        if (name.Length > MaxNameLen)
+            name = name.Substring(0, MaxNameLen);
+
+        // Prepare keys: accept non-zero keys only, up to 6
+        var keys = macro.Keys ?? new ObservableCollection<K_Keys>();
+        var nonZeroKeys = keys.Where(b => b != 0).ToList();
+        if (nonZeroKeys.Count == 0)
+        {
+            Console.WriteLine("Macro must contain at least one key");
+            return;
+        }
+
+        if (nonZeroKeys.Count > 6)
+        {
+            // Trim to 6
+            nonZeroKeys = nonZeroKeys.Take(6).ToList();
+        }
+
+        // Validate key values are in 0..255 (should be by type)
+        foreach (var b in nonZeroKeys)
+        {
+            if ((byte)b > 0xFF)
+            {
+                Console.WriteLine("Invalid key value: " + b);
+                return;
+            }
+        }
+
+        // Format keys as comma separated values, using 0xHH hex format so MCU strtoul(base=0) accepts them
+        string keysStr = string.Join(",", nonZeroKeys.Select(b => "0x" + ((ushort)b).ToString("X2")));
+
+        // Build final argument: slot;name;hex1,hex2,...
+        // Note: MCU expects arguments after command name, so we include a space between command and args
+        string arg = $"{slot};{name};{keysStr}";
+
+        // Send the command
+        SendCommand($"MACROADD {arg}");
+
+        // Optionally request refreshed macros list after a short delay
+        // Fire-and-forget: ask MCU to resend macros; device will respond asynchronously
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(150);
+                GetMacros();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while refreshing macros: " + ex.Message);
+            }
+        });
+    }
+
+    public void DeleteMacro(MacroInfo mc)
+    {
+        Console.WriteLine("Delete Macro " + (mc?.Index.ToString() ?? "(null)"));
+        if (mc == null)
+        {
+            Console.WriteLine("Macro is null");
+            return;
+        }
+
+        if (!IsPortOpen)
+        {
+            Console.WriteLine("Cannot delete macro: serial port not open");
+            return;
+        }
+
+        int slot = mc.Index;
+        if (slot < 0)
+        {
+            Console.WriteLine("Invalid macro slot: " + slot);
+            return;
+        }
+
+        // Send delete command to MCU
+        SendCommand($"MACRODEL {slot}");
+
+        // Ask MCU to refresh macros list shortly after deletion
+        Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(150);
+                GetMacros();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Error while refreshing macros after delete: " + ex.Message);
+            }
+        });
+    }
+    
 }

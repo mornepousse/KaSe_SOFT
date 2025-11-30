@@ -1,0 +1,100 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             Loaded="Control_OnLoaded"
+             x:Name="main"
+             x:Class="KaSe_Controller.MacrosViewControl">
+    <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"></RowDefinition>
+                    <RowDefinition Height="auto" ></RowDefinition>
+                    <RowDefinition Height="auto" MinHeight="100"></RowDefinition>
+                    <RowDefinition Height="Auto"></RowDefinition>
+                </Grid.RowDefinitions>
+                <ListBox DataContext="{Binding ElementName=main,Path=Macros,Mode=TwoWay}"
+                         ItemsSource="{Binding ElementName=main,Path=Macros, Mode=TwoWay}"
+                         SelectedItem="{Binding ElementName=main,Path=SelectedMacro,Mode=TwoWay}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid> 
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition>
+                                    <ColumnDefinition Width="*"></ColumnDefinition>
+                                    <ColumnDefinition Width="Auto"></ColumnDefinition> 
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Keycode}" Margin="3"></TextBlock>
+                                <!-- <TextBlock Grid.Column="1" Text="{Binding Index}" Margin="3"></TextBlock> -->
+                                <TextBlock Grid.Column="1" Text="{Binding Name }" Margin="3"></TextBlock>
+                                
+                                <ItemsControl Grid.Column="2" 
+                                              ItemsSource="{Binding  Path=KeysAsKKeys}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Border Background="CadetBlue" Margin="3" CornerRadius="3">
+                                                <Grid Margin="3" MinWidth="15">
+                                                    <TextBlock Text="{Binding}" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+                                                </Grid>     
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel Orientation="Horizontal"></WrapPanel>
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                </ItemsControl>
+                                <Button Grid.Column="3" Click="Button_OnClickdeleteMacro" Content="x" Margin="3,0,0,0" Background="DarkRed"></Button>
+                                
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+        <TextBlock Grid.Row="1" Text="Add Macro :"></TextBlock>
+        <Border Margin="5" Grid.Row="2" BorderThickness="2" CornerRadius="3" BorderBrush="AliceBlue">
+                <Grid  Margin="5" DataContext="{Binding ElementName=main,Path=NewMacro}"> 
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        <ColumnDefinition></ColumnDefinition>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                        <ColumnDefinition Width="Auto"></ColumnDefinition>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="Name: " VerticalAlignment="Center"></TextBlock>
+                    <TextBox MinWidth="50" Margin="5,0" VerticalAlignment="Center"  Grid.Column="1" Text="{Binding Name }"></TextBox>
+                                
+                    <ListBox Grid.Column="2" VerticalAlignment="Center"  
+                                  ItemsSource="{Binding  Path=Keys}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="CadetBlue" Margin="3" CornerRadius="3">
+                                    <StackPanel Orientation="Horizontal" Margin="3" MinWidth="15">
+                                        <TextBlock Text="{Binding}" HorizontalAlignment="Center" VerticalAlignment="Center"></TextBlock>
+                                        <Button Content="x" Margin="3,0,0,0" Background="DarkRed" Click="Button_OnClickRemoveKey"></Button>
+                                    </StackPanel>     
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"></WrapPanel>
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                    </ListBox>
+                    
+                    <ComboBox SelectedIndex="0" 
+                              MaxDropDownHeight="100" Grid.Column="4" 
+                              VerticalAlignment="Center" 
+                              ItemsSource="{Binding ElementName=main,Path=AvailableMacroKeys}" 
+                              SelectedValue="{Binding ElementName=main,Path=SelectedMacroKeycode,Mode=TwoWay}">
+                    </ComboBox>
+                    
+                    <Button Grid.Column="3" Content="Add Key" Click="Button_OnClickAddKey" VerticalAlignment="Center"  Margin="3,0"></Button>
+                    <Button Grid.Column="5" Content="Create" Click="Button_OnClickAddMacro" VerticalAlignment="Center" Margin="3,0" ></Button>
+                </Grid>
+        </Border>
+            </Grid>
+</UserControl>
