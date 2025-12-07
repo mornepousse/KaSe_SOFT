@@ -6,6 +6,16 @@
         <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
         <ApplicationManifest>app.manifest</ApplicationManifest>
         <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <!-- During development build as framework-dependent to avoid pulling host runtime packs -->
+        <SelfContained>false</SelfContained>
+        <UseAppHost>false</UseAppHost>
+        <AssemblyName>KaSeController</AssemblyName>
+    </PropertyGroup>
+
+    <!-- Generate an apphost for Debug builds on Linux to produce a native executable for local runs -->
+    <PropertyGroup Condition="'$(Configuration)'=='Debug' and '$(RuntimeIdentifier)'==''">
+        <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+        <UseAppHost>true</UseAppHost>
     </PropertyGroup>
 
     <ItemGroup>
@@ -25,6 +35,18 @@
     <ItemGroup>
       <None Update="default.json">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </None>
+      <None Update="Updates\esp32s3_text.bin">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Updates\esp32s3.json">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Updates\esp32s3_data.bin">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </None>
+      <None Update="Updates\KaSe_firmware.bin">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       </None>
     </ItemGroup>
 </Project>

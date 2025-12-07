@@ -2,8 +2,13 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:kaSeController="clr-namespace:KaSe_Controller"
              mc:Ignorable="d" Width="50" Height="50"
-             x:Class="KaSe_Controller.Keycap" x:Name="main" Loaded="Control_OnLoaded">
+             x:Class="KaSe_Controller.Keycap" x:Name="main" Loaded="Control_OnLoaded" Unloaded="Control_OnUnloaded"
+             DataContext="{Binding RelativeSource={RelativeSource Self}}">
+    <UserControl.Resources>
+        <kaSeController:KeyConverter x:Key="KeyConverter" />
+    </UserControl.Resources>
     <Button Click="Button_OnClick" Width="46" Height="46" Background="Gray" BorderBrush="Black" BorderThickness="1" Margin="2">
         <Button.Content>
             <Grid>
@@ -16,8 +21,8 @@
                 <!-- <TextBlock FontSize="8" VerticalAlignment="Top" HorizontalAlignment="Right" -->
                 <!--            Text="{Binding ElementName=main,Path=Column}" /> -->
                 <TextBlock FontSize="7" VerticalAlignment="Center" HorizontalAlignment="Center"
-                           Text="{Binding ElementName=main,Path=KeyString}" TextWrapping="Wrap" />
-                <TextBlock IsVisible="{Binding ElementName=main,Path=IsExtraNameVisible}" Grid.Row="1" Text="{Binding ElementName=main,Path=ExtraName}" FontSize="7" TextAlignment="Center" TextWrapping="Wrap"></TextBlock>
+                           Text="{Binding Key, Converter={StaticResource KeyConverter}}" TextWrapping="Wrap" />
+                <TextBlock IsVisible="{Binding IsExtraNameVisible}" Grid.Row="1" Text="{Binding ExtraName}" FontSize="7" TextAlignment="Center" TextWrapping="Wrap"></TextBlock>
             </Grid>
         </Button.Content>
     </Button>

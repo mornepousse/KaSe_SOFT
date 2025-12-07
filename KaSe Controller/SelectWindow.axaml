@@ -10,26 +10,41 @@
         <Window.Resources>
                 <kaSeController:KeyConverter x:Key="KeyConverter"/>
         </Window.Resources>
-    <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-        <ItemsControl ItemsSource="{Binding ElementName=main,Path=Keys}" DataContext="{Binding ElementName=main,Path=Keys}" >
-            <ItemsControl.ItemTemplate>
-                <DataTemplate>
-                    <Button  Margin="2" Width="100" Height="40" FontSize="12" Click="Button_OnClick" DataContext="{Binding}" >
-                        <Grid>
-                            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" >
-                                <TextBlock.Text>
-                                    <Binding Converter="{StaticResource KeyConverter}"/>
-                                </TextBlock.Text>
-                            </TextBlock>
-                        </Grid>
-                    </Button>
-                </DataTemplate>
-            </ItemsControl.ItemTemplate>
-            <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate>
-                    <WrapPanel Orientation="Horizontal"></WrapPanel>
-                </ItemsPanelTemplate> 
-            </ItemsControl.ItemsPanel>
-        </ItemsControl>     
-    </ScrollViewer>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Top bar: choose keyboard layout -->
+        <StackPanel Orientation="Horizontal" Margin="6" Grid.Row="0">
+            <TextBlock VerticalAlignment="Center" Margin="0,0,6,0">Layout:</TextBlock>
+            <ComboBox Width="120"
+                      ItemsSource="{Binding ElementName=main, Path=Layouts}"
+                      SelectedItem="{Binding ElementName=main, Path=SelectedLayout, Mode=TwoWay}"/>
+        </StackPanel>
+
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto" Grid.Row="1">
+            <ItemsControl ItemsSource="{Binding ElementName=main,Path=Keys}" DataContext="{Binding ElementName=main,Path=Keys}" >
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button  Margin="2" Width="100" Height="40" FontSize="12" Click="Button_OnClick" DataContext="{Binding}" >
+                            <Grid>
+                                <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" >
+                                    <TextBlock.Text>
+                                        <Binding Converter="{StaticResource KeyConverter}"/>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"></WrapPanel>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+    </Grid>
 </Window>

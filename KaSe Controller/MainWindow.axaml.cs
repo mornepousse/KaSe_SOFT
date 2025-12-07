@@ -1,17 +1,22 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel;
+using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
+using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform.Storage;
 
 namespace KaSe_Controller;
 
@@ -30,6 +35,39 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         set
         {
             progressValue = value;
+            OnPropertyChanged();
+        }
+    }
+    
+    private bool isBusy;
+    public bool IsBusy
+    {
+        get => isBusy;
+        private set
+        {
+            isBusy = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private double busyProgress;
+    public double BusyProgress
+    {
+        get => busyProgress;
+        private set
+        {
+            busyProgress = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private string busyMessage = string.Empty;
+    public string BusyMessage
+    {
+        get => busyMessage;
+        private set
+        {
+            busyMessage = value;
             OnPropertyChanged();
         }
     }
@@ -105,9 +143,98 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return cleaned;
     }
      
+    private bool exportInProgress;
+
+    private string[] _layouts = new[] { "QWERTY", "AZERTY", "QWERTZ" };
+    public string[] Layouts
+    {
+        get => _layouts;
+        set { _layouts = value; OnPropertyChanged(); }
+    }
+
+    private string _selectedLayout = "QWERTY";
+    public string SelectedLayout
+    {
+        get => _selectedLayout;
+        set
+        {
+            if (_selectedLayout == value) return;
+            _selectedLayout = value;
+            OnPropertyChanged();
+            try
+            {
+                // Persist and notify via SettingsManager helper
+                SettingsManager.ApplyKeyboardLayout(_selectedLayout);
+            }
+            catch { }
+
+            // Refresh the keyboard UI when the layout changes
+            try
+            {
+                RefreshKeyboardGrid();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error refreshing keyboard grid: {ex}");
+            }
+        }
+    }
+
+    // Reload the keyboard UI into the KeyboardGrid (on UI thread)
+    private void RefreshKeyboardGrid()
+    {
+        // If called from non-UI thread, dispatch to UI thread
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            _ = Dispatcher.UIThread.InvokeAsync(() => RefreshKeyboardGrid());
+            return;
+        }
+
+        try
+        {
+            // Ensure KeyboardGrid exists in the visual tree
+            var kg = this.FindControl<Grid>("KeyboardGrid");
+            if (kg == null)
+                return;
+
+            kg.Children.Clear();
+            var ui = KeyboardUiRenderer.LoadDefaultJsonUi();
+            if (ui != null)
+                kg.Children.Add(ui);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"RefreshKeyboardGrid failed: {ex}");
+        }
+    }
+
     public MainWindow()
     {
-        InitializeComponent();
+        InitializeComponent(); 
+
+        App.SerialPortManager.RawDataReceived += OnRawDataReceived;
+
+        // initialize selected layout from settings
+        try
+        {
+            if (SettingsManager.Current == null)
+                SettingsManager.LoadAsync().GetAwaiter().GetResult();
+            if (!string.IsNullOrWhiteSpace(SettingsManager.Current?.KeyboardLayout))
+                SelectedLayout = SettingsManager.Current!.KeyboardLayout;
+        }
+        catch { }
+    }
+
+    private void OnRawDataReceived(string data)
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            var terminalOutput = this.FindControl<TextBlock>("TerminalOutput");
+            if (terminalOutput != null)
+            {
+                terminalOutput.Text += data;
+            }
+        });
     }
 
     private void Control_OnLoaded(object? sender, RoutedEventArgs e)
@@ -115,7 +242,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         KeyboardGrid.Children.Add( KeyboardUiRenderer.LoadDefaultJsonUi());
         App.CurrentLayer = 0;
 
-        // Start a background check for first-run dependencies (non-blocking UI)
         _ = CheckDependenciesOnFirstRunAsync();
     }
 
@@ -154,116 +280,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 }
             }
             catch { }
-
-            // quick probe: look for esptool or espflash in PATH
-            var found = false;
-            try
-            {
-                var res1 = await ToolInstaller.RunPublicProbeAsync("esptool.py", "--version");
-                if (res1)
-                    found = true;
-            }
-            catch { }
-
-            try
-            {
-                var res1b = await ToolInstaller.RunPublicProbeAsync("esptool", "--version");
-                if (res1b)
-                    found = true;
-            }
-            catch { }
-
-            try
-            {
-                var res2 = await ToolInstaller.RunPublicProbeAsync("espflash", "--version");
-                if (res2)
-                    found = true;
-            }
-            catch { }
-
-            if (found)
-            {
-                // nothing to do
-                return;
-            }
-
-            // else ask user to install tools
-            await Dispatcher.UIThread.InvokeAsync(async () =>
-            {
-                var dlg = new Window
-                {
-                    Title = "Vérification des dépendances",
-                    Width = 480,
-                    Height = 220,
-                    WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                };
-
-                var panel = new StackPanel { Margin = new Thickness(8) };
-                panel.Children.Add(new TextBlock { Text = "Outils de flashing (esptool/espflash) introuvables. Voulez-vous tenter une installation automatique ?", TextWrapping = Avalonia.Media.TextWrapping.Wrap });
-
-                var skipCheckbox = new CheckBox { Content = "Ne plus demander", Margin = new Thickness(0,8,0,0) };
-
-                var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Margin = new Thickness(0,12,0,0) };
-                var installBtn = new Button { Content = "Installer", Width = 100, Margin = new Thickness(8,0,8,0) };
-                var laterBtn = new Button { Content = "Plus tard", Width = 100, Margin = new Thickness(8,0,8,0) };
-                buttons.Children.Add(installBtn);
-                buttons.Children.Add(laterBtn);
-
-                panel.Children.Add(skipCheckbox);
-                panel.Children.Add(buttons);
-                dlg.Content = panel;
-
-                var tcs = new TaskCompletionSource<bool>();
-                installBtn.Click += async (_, __) =>
-                {
-                    tcs.TrySetResult(true);
-                    dlg.Close();
-                };
-                laterBtn.Click += (_, __) =>
-                {
-                    tcs.TrySetResult(false);
-                    dlg.Close();
-                };
-
-                await dlg.ShowDialog(this);
-                var doInstall = await tcs.Task;
-                if (skipCheckbox.IsChecked == true)
-                {
-                    settings.SkipDependencyCheck = true;
-                    await SettingsManager.SaveAsync(settings);
-                }
-
-                if (doInstall)
-                {
-                    FlashLog.Text = string.Empty;
-                    var cts = new CancellationTokenSource();
-                    var progress = new Progress<string>(s => {
-                        FlashLog.Text += s + "\n";
-                        FlashLog.CaretIndex = FlashLog.Text.Length;
-                    });
-
-                    try
-                    {
-                        var (success, message) = await ToolInstaller.InstallNativeToolsAsync(progress, cts.Token);
-                        if (success)
-                            await ShowInfoAsync("Installation terminée: " + message, "Installer outils");
-                        else
-                            await ShowInfoAsync("Échec de l'installation: " + message, "Installer outils");
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        await ShowInfoAsync("Installation annulée", "Installer outils");
-                    }
-                    catch (Exception ex)
-                    {
-                        await ShowInfoAsync("Erreur: " + ex.Message, "Installer outils");
-                    }
-                    finally
-                    {
-                        cts.Dispose();
-                    }
-                }
-            });
+ 
         }
         catch
         {
@@ -294,114 +311,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private async void ConnectButton_OnClick(object? sender, RoutedEventArgs e)
     {
         TryToConnect();
-    }
-
-    private async void FlashButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        // Open file dialog to select firmware
-        var dlg = new OpenFileDialog();
-        dlg.Filters.Add(new FileDialogFilter { Name = "Firmware", Extensions = { "bin", "hex" } });
-        dlg.AllowMultiple = false;
-        var files = await dlg.ShowAsync(this);
-        if (files == null || files.Length == 0)
-            return;
-
-        var firmwarePath = files[0];
-
-        // confirmation
-        var confirm = await ConfirmAsync($"Flasher le firmware:\n{firmwarePath}\n sur le port detecté ?", "Confirmer flash");
-        if (!confirm)
-            return;
-
-        // ensure port open
-        if (!App.SerialPortManager.IsPortOpen)
-        {
-            App.SerialPortManager.OpenPort(App.SerialPortManager.GetKeyboardPort());
-        }
-
-        var cts = new CancellationTokenSource();
-
-        FlashLog.Text = string.Empty;
-        ProgressValue = 0;
-
-        var textProgress = new Progress<string>(s => {
-            // append line
-            FlashLog.Text += s + "\n";
-            FlashLog.CaretIndex = FlashLog.Text.Length;
-        });
-        var percentProgress = new Progress<int>(p => {
-            ProgressValue = p;
-        });
-
-        try
-        {
-            var portToUse = App.SerialPortManager.GetKeyboardPort();
-            if (string.IsNullOrWhiteSpace(portToUse))
-            {
-                await ShowInfoAsync("Port du clavier introuvable", "Erreur");
-                return;
-            }
-
-            var result = await App.SerialPortManager.FlashFirmwareAsync(portToUse, firmwarePath, null, textProgress, percentProgress, cts.Token);
-            if (result.Success)
-            {
-                await ShowInfoAsync("Flash réussi", "Succès");
-            }
-            else
-            {
-                await ShowInfoAsync("Erreur lors du flash: " + result.Message + "\nVoir le log pour les détails.", "Erreur");
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            await ShowInfoAsync("Flash annulé", "Annulé");
-        }
-        catch (Exception ex)
-        {
-            await ShowInfoAsync("Exception: " + ex.Message, "Erreur");
-        }
-        finally
-        {
-            cts.Dispose();
-            ProgressValue = 0;
-        }
-    }
-
-    private void HelpButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (!App.SerialPortManager.IsPortOpen)
-        {
-            App.SerialPortManager.OpenPort(App.SerialPortManager.GetKeyboardPort());    
-        }
-        App.SerialPortManager.GetHelp();
-    }
-
-    private void L1Button_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (!App.SerialPortManager.IsPortOpen)
-        {
-            App.SerialPortManager.OpenPort(App.SerialPortManager.GetKeyboardPort());    
-        }
-        App.SerialPortManager.GetLayer(1);
-    }
-
-    private void K1Button_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (!App.SerialPortManager.IsPortOpen)
-        {
-            App.SerialPortManager.OpenPort(App.SerialPortManager.GetKeyboardPort());    
-        }
-        App.SerialPortManager.GetKeymap(1);
-    }
-
-    private void KEYSETButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        if (!App.SerialPortManager.IsPortOpen)
-        {
-            App.SerialPortManager.OpenPort(App.SerialPortManager.GetKeyboardPort());    
-        }
-        App.SerialPortManager.SetKey(0,0,0, K_Keys.K_A);
-    }
+    } 
 
     private void SelectingItemsControl_OnSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
@@ -411,36 +321,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    private async void InstallToolsButton_OnClick(object? sender, RoutedEventArgs e)
-    {
-        FlashLog.Text = string.Empty;
-        var cts = new CancellationTokenSource();
-        var progress = new Progress<string>(s => {
-            FlashLog.Text += s + "\n";
-            FlashLog.CaretIndex = FlashLog.Text.Length;
-        });
-
-        try
-        {
-            var (success, message) = await ToolInstaller.InstallNativeToolsAsync(progress, cts.Token);
-            if (success)
-                await ShowInfoAsync("Installation terminée: " + message, "Installer outils");
-            else
-                await ShowInfoAsync("Échec de l'installation: " + message, "Installer outils");
-        }
-        catch (OperationCanceledException)
-        {
-            await ShowInfoAsync("Installation annulée", "Installer outils");
-        }
-        catch (Exception ex)
-        {
-            await ShowInfoAsync("Erreur: " + ex.Message, "Installer outils");
-        }
-        finally
-        {
-            cts.Dispose();
-        }
-    }
+    
 
     private async Task<bool> ConfirmAsync(string message, string title)
     {
@@ -495,6 +376,29 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         await tcs.Task;
     }
 
+    private void BeginBusy(string message)
+    {
+        BusyMessage = message;
+        BusyProgress = 0;
+        IsBusy = true;
+    }
+
+    private void ReportBusy(double progress, string? message = null)
+    {
+        BusyProgress = progress;
+        if (!string.IsNullOrWhiteSpace(message))
+        {
+            BusyMessage = message;
+        }
+    }
+
+    private void EndBusy()
+    {
+        IsBusy = false;
+        BusyProgress = 0;
+        BusyMessage = string.Empty;
+    }
+
     private void Button_OnClickSetLayoutName(object? sender, RoutedEventArgs e)
     {
         if (App.SerialPortManager.IsPortOpen)
@@ -512,5 +416,180 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
-    
+    private async void ExportLayerBtnOnClick(object? sender, RoutedEventArgs e)
+    {
+        if (!App.SerialPortManager.IsPortOpen)
+            return;
+
+        var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storageProvider == null)
+            return;
+
+        var dto = App.SerialPortManager.ExportLayerSnapshot(CurrentLayer);
+        var suggested = $"kase_layer_{CurrentLayer}_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+
+        var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            SuggestedFileName = suggested,
+            Title = "Exporter la couche",
+            DefaultExtension = "json",
+            ShowOverwritePrompt = true
+        });
+
+        if (file == null)
+            return;
+
+        try
+        {
+            var json = ConfigSerializer.LayerToJson(dto);
+            await using var stream = await file.OpenWriteAsync();
+            await using var writer = new StreamWriter(stream);
+            await writer.WriteAsync(json);
+        }
+        catch (Exception ex)
+        {
+            await ShowInfoAsync($"Échec de l'export de couche: {ex.Message}", "Erreur");
+        }
+    }
+
+    private async void ImportLayerBtnOnClick(object? sender, RoutedEventArgs e)
+    {
+        if (!App.SerialPortManager.IsPortOpen)
+            return;
+
+        var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storageProvider == null)
+            return;
+
+        var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Importer une couche",
+            AllowMultiple = false,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("Fichiers JSON")
+                {
+                    Patterns = new[] { "*.json" }
+                }
+            }
+        });
+
+        var file = files.FirstOrDefault();
+        if (file == null)
+            return;
+
+        try
+        {
+            await using var stream = await file.OpenReadAsync();
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            var dto = ConfigSerializer.LayerFromJson(json);
+            App.SerialPortManager.ImportLayerToDevice(CurrentLayer, dto);
+            SelectedLayoutName = App.LayoutsName[CurrentLayer];
+        }
+        catch (Exception ex)
+        {
+            await ShowInfoAsync($"Échec de l'import de couche: {ex.Message}", "Erreur");
+        }
+    }
+
+    private async void ExportConfigBtnOnClick(object? sender, RoutedEventArgs e)
+    {
+        if (!App.SerialPortManager.IsPortOpen || exportInProgress)
+            return;
+
+        exportInProgress = true;
+        BeginBusy("Export configuration en cours...");
+        try
+        {
+            var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
+            if (storageProvider == null)
+                return;
+
+            var fileName = $"kase_config_{DateTime.Now:yyyyMMdd_HHmmss}.json";
+            var file = await storageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                SuggestedFileName = fileName,
+                Title = "Exporter la configuration",
+                DefaultExtension = "json",
+                ShowOverwritePrompt = true
+            });
+
+            if (file == null)
+                return;
+
+            ReportBusy(50, "Sérialisation...");
+            var dto = ConfigSerializer.Snapshot();
+            var json = ConfigSerializer.ToJson(dto);
+
+            await using var stream = await file.OpenWriteAsync();
+            await using var writer = new StreamWriter(stream);
+            await writer.WriteAsync(json);
+            ReportBusy(100, "Configuration exportée");
+        }
+        catch (Exception ex)
+        {
+            await ShowInfoAsync($"Échec de l'export: {ex.Message}", "Erreur");
+        }
+        finally
+        {
+            exportInProgress = false;
+            EndBusy();
+        }
+    }
+
+    private async void ImportConfigBtnOnClick(object? sender, RoutedEventArgs e)
+    {
+        if (!App.SerialPortManager.IsPortOpen)
+            return;
+
+        var storageProvider = TopLevel.GetTopLevel(this)?.StorageProvider;
+        if (storageProvider == null)
+            return;
+
+        var files = await storageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = "Importer une configuration",
+            AllowMultiple = false,
+            FileTypeFilter = new[]
+            {
+                new FilePickerFileType("Fichiers JSON")
+                {
+                    Patterns = new[] { "*.json" }
+                }
+            }
+        });
+
+        var file = files.FirstOrDefault();
+        if (file == null)
+            return;
+
+        if (!await ConfirmAsync("Importer cette configuration ? Vos données actuelles seront remplacées.", "Confirmation"))
+            return;
+
+        BeginBusy("Import configuration...");
+        try
+        {
+            await using var stream = await file.OpenReadAsync();
+            using var reader = new StreamReader(stream);
+            var json = await reader.ReadToEndAsync();
+            var dto = ConfigSerializer.FromJson(json);
+            ConfigSerializer.Apply(dto);
+            ReportBusy(70, "Écriture sur le clavier...");
+            await App.SerialPortManager.PushConfigAsync(dto, new Progress<double>(p => ReportBusy(p, null)));
+            ReportBusy(100, "Configuration importée");
+        }
+        catch (Exception ex)
+        {
+            await ShowInfoAsync($"Échec de l'import: {ex.Message}", "Erreur");
+        }
+        finally
+        {
+            EndBusy();
+        }
+    }
+
+
+
+
 }

@@ -264,8 +264,8 @@ public enum K_Keys : UInt16
  K_ESCAPE                     = HID_KEY_ESCAPE                      ,// Escape
  K_ESC	                      =HID_KEY_ESCAPE                       ,// Escape
  K_BACKSPACE                  = HID_KEY_BACKSPACE                   ,// Backspace
- K_BSPACE                   =	  HID_KEY_BACKSPACE                 ,// Backspace
- K_BSPC                   	  =HID_KEY_BACKSPACE                    ,// Backspace
+ K_BSPACE                     = HID_KEY_BACKSPACE                 ,// Backspace
+ K_BSPC                   	  = HID_KEY_BACKSPACE                    ,// Backspace
  K_TAB                        = HID_KEY_TAB                         ,// Tab
  K_SPACE                      = HID_KEY_SPACE                       ,// Space
  K_SPC                        = HID_KEY_SPACE                       ,// Space

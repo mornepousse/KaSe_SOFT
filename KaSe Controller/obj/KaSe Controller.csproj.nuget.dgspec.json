@@ -8,7 +8,7 @@
       "version": "1.0.0",
       "restore": {
         "projectUniqueName": "/home/mae/Documents/GitHub/KaSe_SOFT/KaSe Controller/KaSe Controller.csproj",
-        "projectName": "KaSe Controller",
+        "projectName": "KaSeController",
         "projectPath": "/home/mae/Documents/GitHub/KaSe_SOFT/KaSe Controller/KaSe Controller.csproj",
         "packagesPath": "/home/mae/.nuget/packages/",
         "outputPath": "/home/mae/Documents/GitHub/KaSe_SOFT/KaSe Controller/obj/",
@@ -364,6 +364,11 @@
             "System.Xml.XPath": "(,4.3.32767]",
             "System.Xml.XPath.XDocument": "(,5.0.32767]"
           }
+        }
+      },
+      "runtimes": {
+        "linux-x64": {
+          "#import": []
         }
       }
     }

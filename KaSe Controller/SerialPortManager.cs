@@ -34,8 +34,11 @@ enum cdc_command_type
 };
 public class SerialPortManager : INotifyPropertyChanged
 {
+    private const int MacroSlotCount = 20;
+       
     #region event
     public event PropertyChangedEventHandler PropertyChanged;
+    public event Action<string> RawDataReceived;
     protected void OnPropertyChanged([CallerMemberName] string name = "") => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     #endregion event
     private SerialPort _serialPort;
@@ -88,6 +91,14 @@ public class SerialPortManager : INotifyPropertyChanged
             {
                 data.Add((byte)byteRead);
             }
+        }
+
+        // Ajout pour afficher les données brutes reçues
+        if (data.Count > 0)
+        {
+            string rawData = System.Text.Encoding.UTF8.GetString(data.ToArray());
+            Console.WriteLine("RAW DATA: " + rawData);
+            RawDataReceived?.Invoke(rawData);
         }
 
         parseData();
@@ -155,15 +166,18 @@ public class SerialPortManager : INotifyPropertyChanged
                     Console.WriteLine("Layer: " + layerTmp);
                     App.Keys[layerTmp] = new ObservableCollection<ObservableCollection<K_Keys>>();
                     int index = 2;
+                    var receivedList = new List<int>(rows * cols);
                     for (int r = 0; r < rows; r++)
                     {
                         App.Keys[layerTmp].Add(new ObservableCollection<K_Keys>());
                         for (int c = 0; c < cols; c++)
                         {
                            App.Keys[layerTmp][r].Add((K_Keys)(commandData[index] | (commandData[index + 1] << 8)));
+                          receivedList.Add(commandData[index] | (commandData[index + 1] << 8));
                             index += 2;
                         }
                     }
+                    // store raw received values for external verification
                     App.UpdateKey();
                     break;
                 case cdc_command_type.c_get_all_layout_names_t :
@@ -226,27 +240,19 @@ public class SerialPortManager : INotifyPropertyChanged
             return;
         
         int length = data != null ? data.Length : 0;
-        //byte[] com = new byte[4 + length];
         List<byte> com = new List<byte>();
         com.Add((byte)'C');
         com.Add((byte)'>');
         com.Add((byte)cmd);
-        //com[0] = (byte)'C';
-        //com[1] = (byte)'>';
-        //com[2] = (byte)cmd;
         if (data != null)
         {
             com.Add((byte)(length & 0xFF));
             com.Add((byte)((length >> 8) & 0xFF));
-            //com[3] = (byte)(length & 0xFF);
-            //com[4] = (byte)((length >> 8) & 0xFF);    
         }
         else
         {
             com.Add(0);
             com.Add(0);
-            //com[3] = 0;
-            //com[4] = 0;    
         }
 
         if (data != null || length > 0)
@@ -261,9 +267,18 @@ public class SerialPortManager : INotifyPropertyChanged
         {
             _serialPort.Write(com.ToArray(), 0, com.Count);    
         }
-        
+
     }
-    
+
+    private void SendCommand(string command)
+    {
+        if (!IsPortOpen)
+            return;
+
+        byte[] com = System.Text.Encoding.ASCII.GetBytes(command + "\n");
+        _serialPort.Write(com, 0, com.Length);
+
+    }
     public void GetLayers()
     {
         Console.WriteLine("Get Layers");
@@ -279,14 +294,6 @@ public class SerialPortManager : INotifyPropertyChanged
     {
         Console.WriteLine("Get Layer " + layer);
         SendCommand($"L{layer}");
-    }
-    private void SendCommand(string command)
-    {
-        if (!IsPortOpen)
-            return;
-        
-        byte[] com = System.Text.Encoding.ASCII.GetBytes(command + "\n");
-        _serialPort.Write(com, 0, com.Length);
     }
     public void GetKeymap(int layer)
     {
@@ -533,7 +540,7 @@ public class SerialPortManager : INotifyPropertyChanged
         Console.WriteLine($"Total macros parsed: {App.Macros.Count}");
     }
     
-    public void AddMacro(MacroInfo macro)
+    public void AddMacro(MacroInfo macro, bool refreshAfter = true)
     {
         Console.WriteLine("Add Macro " + (macro?.Name ?? "(null)"));
         if (macro == null)
@@ -617,7 +624,8 @@ public class SerialPortManager : INotifyPropertyChanged
             try
             {
                 await Task.Delay(150);
-                GetMacros();
+                if (refreshAfter)
+                    GetMacros();
             }
             catch (Exception ex)
             {
@@ -626,44 +634,176 @@ public class SerialPortManager : INotifyPropertyChanged
         });
     }
 
-    public void DeleteMacro(MacroInfo mc)
+    public void DeleteMacro(MacroInfo macro)
     {
-        Console.WriteLine("Delete Macro " + (mc?.Index.ToString() ?? "(null)"));
-        if (mc == null)
-        {
-            Console.WriteLine("Macro is null");
+        if (!IsPortOpen || macro == null)
             return;
-        }
-
-        if (!IsPortOpen)
-        {
-            Console.WriteLine("Cannot delete macro: serial port not open");
-            return;
-        }
-
-        int slot = mc.Index;
-        if (slot < 0)
-        {
-            Console.WriteLine("Invalid macro slot: " + slot);
-            return;
-        }
-
-        // Send delete command to MCU
-        SendCommand($"MACRODEL {slot}");
-
-        // Ask MCU to refresh macros list shortly after deletion
+        SendCommand($"MACRODEL {macro.Index}");
         Task.Run(async () =>
         {
-            try
-            {
-                await Task.Delay(150);
-                GetMacros();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Error while refreshing macros after delete: " + ex.Message);
-            }
+            await Task.Delay(150);
+            GetMacros();
         });
     }
-    
+
+    private async Task ClearDeviceMacrosAsync(Action stepCallback, CancellationToken cancellationToken)
+    {
+        for (int slot = 0; slot < MacroSlotCount; slot++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            SendCommand($"MACRODEL {slot}");
+            stepCallback();
+            await Task.Delay(60, cancellationToken);
+        }
+    }
+
+    private void SetLayerBulk(int layer, ObservableCollection<ObservableCollection<K_Keys>> rows)
+    {
+        if (!IsPortOpen || rows == null)
+            return;
+
+        int expected = App.Rows * App.Cols;
+        var sb = new StringBuilder("SETLAYER");
+        sb.Append(layer);
+        sb.Append(':');
+
+        int written = 0;
+        for (int r = 0; r < App.Rows; r++)
+        {
+            var row = r < rows.Count ? rows[r] : null;
+            for (int c = 0; c < App.Cols; c++)
+            {
+                if (written > 0)
+                    sb.Append(',');
+
+                ushort value = (ushort)(row != null && c < row.Count ? row[c] : K_Keys.K_NO);
+                sb.Append("0x");
+                sb.Append(value.ToString("X4"));
+                written++;
+            }
+        }
+
+        if (written != expected)
+        {
+            Console.WriteLine($"SETLAYER payload size mismatch: expected {expected}, written {written}");
+        }
+
+        SendCommand(sb.ToString());
+    }
+
+    public void SyncLayerToDevice(int layer)
+    {
+        if (!IsPortOpen)
+        {
+            Console.WriteLine("Cannot sync layer: serial port closed");
+            return;
+        }
+
+        if (App.Keys == null || layer < 0 || layer >= App.Keys.Count)
+        {
+            Console.WriteLine($"Invalid layer index {layer} for sync");
+            return;
+        }
+
+        SetLayerBulk(layer, App.Keys[layer]);
+    }
+
+    public void SyncLayoutName(int layer)
+    {
+        if (!IsPortOpen)
+            return;
+
+        string name = layer >= 0 && layer < App.LayoutsName.Count
+            ? App.LayoutsName[layer]
+            : $"LAYER{layer}";
+        SetLayerName(layer, name);
+    }
+
+    public void ImportLayerToDevice(int layer, LayerConfigDto dto)
+    {
+        if (dto == null)
+            throw new ArgumentNullException(nameof(dto));
+        ConfigSerializer.ApplyLayer(layer, dto);
+        SyncLayerToDevice(layer);
+        SyncLayoutName(layer);
+    }
+
+    public LayerConfigDto ExportLayerSnapshot(int layer)
+    {
+        return ConfigSerializer.SnapshotLayer(layer);
+    }
+
+    public void SetLayerFromApp(int layer)
+    {
+        if (App.Keys == null)
+        {
+            Console.WriteLine("App.Keys is null");
+            return;
+        }
+        if (layer < 0 || layer >= App.Keys.Count)
+        {
+            Console.WriteLine($"Invalid layer index for App.Keys: {layer}");
+            return;
+        }
+        SetLayerBulk(layer, App.Keys[layer]);
+    }
+
+    public async Task PushConfigAsync(AppConfigDto dto, IProgress<double>? progress = null, CancellationToken cancellationToken = default)
+    {
+        if (dto == null)
+            throw new ArgumentNullException(nameof(dto));
+        if (!IsPortOpen)
+            throw new InvalidOperationException("Le clavier n'est pas connecté");
+
+        int layerOps = Math.Min(App.MaxLayers, App.Keys?.Count ?? 0);
+        int layoutOps = App.MaxLayers;
+        int macroOps = MacroSlotCount + (App.Macros?.Count ?? 0);
+        double totalOps = Math.Max(1, layerOps + layoutOps + macroOps);
+        double done = 0;
+        void ReportProgress()
+        {
+            double pct = Math.Min(100, done / totalOps * 100);
+            progress?.Report(pct);
+        }
+
+        for (int layer = 0; layer < layerOps; layer++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            SetLayerFromApp(layer);
+            done++;
+            ReportProgress();
+            await Task.Delay(500, cancellationToken);
+        }
+
+        for (int i = 0; i < layoutOps; i++)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            string name = i < App.LayoutsName.Count ? App.LayoutsName[i] : $"LAYER{i}";
+            SetLayerName(i, name);
+            done++;
+            ReportProgress();
+            await Task.Delay(80, cancellationToken);
+        }
+
+        await ClearDeviceMacrosAsync(() =>
+        {
+            done++;
+            ReportProgress();
+        }, cancellationToken);
+
+        if (App.Macros != null)
+        {
+            foreach (var macro in App.Macros)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                AddMacro(macro, refreshAfter: false);
+                done++;
+                ReportProgress();
+                await Task.Delay(150, cancellationToken);
+            }
+        }
+
+        GetMacros();
+        progress?.Report(100);
+    }
 }

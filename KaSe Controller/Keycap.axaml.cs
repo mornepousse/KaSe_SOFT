@@ -96,6 +96,29 @@ public partial class Keycap : UserControl, INotifyPropertyChanged
         App.UpdateKeyEvent += OnUpdateKey;
         _timer.Interval = TimeSpan.FromMilliseconds(100);
         _timer.Tick += TimerOnTick;
+
+        // subscribe to keyboard layout changes so we can refresh displayed label
+        SettingsManager.KeyboardLayoutChanged += OnKeyboardLayoutChanged;
+    }
+
+    private void OnKeyboardLayoutChanged(string newLayout)
+    {
+        // Ensure update runs on UI thread
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            _ = Dispatcher.UIThread.InvokeAsync(() => OnKeyboardLayoutChanged(newLayout));
+            return;
+        }
+
+        // Notify bindings that Key (and therefore displayed text) changed
+        OnPropertyChanged(nameof(Key));
+        OnPropertyChanged(nameof(KeyString));
+    }
+
+    private void Control_OnUnloaded(object? sender, RoutedEventArgs e)
+    {
+        // unsubscribe
+        SettingsManager.KeyboardLayoutChanged -= OnKeyboardLayoutChanged;
     }
 
     private void TimerOnTick(object? sender, EventArgs e)
