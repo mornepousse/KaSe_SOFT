@@ -2,496 +2,187 @@
 
 KaSe_soft is the desktop configuration and management tool for the **KaSe** custom mechanical keyboard.
 It provides a graphical interface to visualize the layout, edit keymaps and layers, and push the configuration
-to the keyboard over USB (CDC ACM), working together with the firmware and hardware repositories:
-
-- Firmware (embedded): [`KaSe_Code`](https://github.com/mornepousse/KaSe_Code)
-- PCB / hardware / mechanics: [`KaSe_PCB`](https://github.com/mornepousse/KaSe_PCB)
+to the keyboard over USB (CDC ACM). This README has been updated with practical build/run instructions and debugging tips.
 
 ![KaSe_soft main window](capture.jpg)
 
 ---
 
-## Features
+## Résumé / Summary
 
-- **Keyboard visualization**
-  - Graphical view of the KaSe layout (column-oriented, rotated blocks, special keys).
-  - Layout is generated from a `default.json` file that describes the geometry
-    of the keyboard (handled by `KeyboardUiRenderer`).
-
-- **Layer management**
-  - Read the current keymap from the keyboard.
-  - Select the active layer.
-  - Display all keys for each layer.
-
-- **Key remapping**
-  - Select a key in the UI and assign a new keycode
-    (based on the HID enumeration defined in `K_Keys.cs`).
-  - Supports a wide set of standard HID keys (letters, digits, modifiers,
-    function keys, keypad, etc.).
-  - Sends changes to the firmware using a simple text protocol
-    over the CDC ACM serial port.
-
-- **Serial communication with the keyboard**
-  - Automatic detection of the KaSe keyboard serial port on Linux
-    (looks for a device with `ID_MODEL=KaSeV2` via `udevadm`).
-  - Open / close the serial port.
-  - Request keymaps, switch layers, update individual keys.
-
-- **Cross‑platform UI (Avalonia)**
-  - Built with **Avalonia UI**.
-  - Target platform for now: Linux (tested with udev‑based detection).
-    Other OSes are theoretically possible but may require
-    different serial‑port detection logic.
+KaSe_soft permet :
+- visualiser le layout du clavier KaSe,
+- éditer les keymaps / layers et les envoyer au clavier sur CDC ACM,
+- gérer plusieurs dispositions de clavier (layout) côté UI,
+- debugger et dépanner les problèmes de build et d'exécution.
 
 ---
 
-## Project structure (overview)
+## Build & Run (debug and creating an executable)
 
-Main files and their roles in the `KaSe Controller` project:
+Notes importantes :
+- Le projet cible `net10.0`. Selon la configuration du SDK/IDE, l'artefact produit par `dotnet build` peut être seulement une DLL (build framework-dependent).
+- Pour obtenir un exécutable natif (apphost) ou une publication autonome, il faut fournir un Runtime Identifier (RID) ou publier en self-contained.
 
-- `App.axaml` / `App.axaml.cs`
-  - Avalonia application entry point and global setup.
-  - Provides default keymaps (layers) and holds global state such as
-    the currently selected layer.
+Common commands (Linux, example `linux-x64`):
 
-- `MainWindow.axaml` / `MainWindow.axaml.cs`
-  - Main window of the application.
-  - Contains the main keyboard view area (a grid where the dynamic layout is injected)
-    and basic controls like the `connect` button.
-  - On load, inserts the rendered keyboard UI using
-    `KeyboardUiRenderer.LoadDefaultJsonUi()`.
-
-- `SelectWindow.axaml` / `SelectWindow.axaml.cs`
-  - Additional window/control for selecting keys and layers.
-  - Binds an `ObservableCollection` of `K_Keys` and uses the converter
-    to display human‑readable labels.
-
-- `KeyboardUiRenderer.cs`
-  - Loads `default.json`, which describes the physical layout of the keyboard.
-  - Dynamically builds Avalonia controls (`Keycap`, `StackPanel`, nested groups, etc.)
-    according to the JSON structure (columns, rows, margins, rotations, widths…).
-
-- `Keycap.axaml` / `Keycap.axaml.cs`
-  - Custom Avalonia control representing a single key.
-  - Binds to a `K_Keys` value and uses `KeyConverter` to generate a text label.
-
-- `KeyConverter.cs`
-  - Converts `K_Keys` enumeration values into string labels suitable for the UI
-    (e.g. turning `K_Q` into "Q").
-
-- `K_Keys.cs`
-  - Large enumeration of HID keycodes.
-  - Contains both raw HID codes (e.g. `HID_KEY_Q`) and friendly aliases
-    used by the keymap (`K_Q`, `K_1`, `K_LCTRL`, etc.).
-
-- `SerialPortManager.cs`
-  - Manages serial ports.
-  - Enumerates available ports and checks which one is the KaSe keyboard
-    (Linux: `udevadm` + `ID_MODEL=KaSeV2`).
-  - Opens/closes the serial port and exposes methods to:
-    - get the current keymap for a given layer,
-    - change keys,
-    - and perform other keyboard‑level commands.
-
-- `default.json`
-  - JSON description of the physical layout:
-    columns, rows, margins, rotation angles of blocks, special key widths, etc.
-  - Used exclusively for rendering the keyboard in the UI; actual key values
-    come from the firmware/keymap.
-
----
-
-## Requirements
-
-- **.NET SDK** 9.0 (or a compatible version as defined in `KaSe Controller.csproj`).
-- **Linux** (tested):
-  - `udevadm` must be available for automatic port detection.
-- A KaSe keyboard built from [`KaSe_PCB`](https://github.com/mornepousse/KaSe_PCB)
-  and flashed with the firmware from [`KaSe_Code`](https://github.com/mornepousse/KaSe_Code).
-
----
-
-## Getting started
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/mornepousse/KaSe_SOFT.git
-cd KaSe_SOFT/"KaSe Controller"
-```
-
-### 2. Restore dependencies and build
+- Restore and build (framework-dependent):
 
 ```bash
 dotnet restore
 dotnet build
-```
-
-### 3. Run the application
-
-```bash
 dotnet run
 ```
 
-On first run, you should see the KaSe layout and a `connect` button at the bottom.
+- Build for a RID to get an apphost (executable) next to the DLL:
+
+```bash
+# Debug build with RID -> apphost executable is generated in bin/.../linux-x64
+dotnet build -r linux-x64 -c Debug
+```
+
+- Publish a single self-contained executable (slow, larger output):
+
+```bash
+dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=false
+# result in bin/Release/net10.0/linux-x64/publish/
+```
+
+If Rider generates only the DLL and not the executable, check that either:
+- your project has a `<RuntimeIdentifier>linux-x64</RuntimeIdentifier>` (or similar) in the `.csproj` or
+- you pass the `-r` argument to `dotnet build` / `dotnet publish` as shown above.
+
+Known NuGet / SDK errors you may encounter:
+- NU1101 Unable to find package `Microsoft.NETCore.App.Host.arch-x64`: this happens when the SDK / restore expects host runtime packs that are not available in your NuGet sources. Solution:
+  - prefer `dotnet build -r linux-x64` which uses local runtime packs under `/usr/share/dotnet/packs` when targeting an installed runtime, or
+  - install the appropriate runtime packs for the SDK, or
+  - remove an explicit invalid `<RuntimeIdentifier>` from the csproj if it points to a non-existing pack.
 
 ---
 
-## Using KaSe_soft with a real keyboard
+## Keyboard layouts & KeyConverter
 
-1. **Flash the firmware**
-   - Follow the instructions from [`KaSe_Code`](https://github.com/mornepousse/KaSe_Code)
-     to flash the ESP32‑S3 with the KaSe firmware.
-   - After flashing, the device should expose both:
-     - a HID keyboard interface, and
-     - a CDC ACM serial interface.
+The UI supports different keyboard layouts (example: `qwerty`, `azerty`, `qwertz`). The `KeyConverter` class is responsible for turning a `K_Keys` enumeration value into a user-friendly label for `Keycap` controls.
 
-2. **Plug the keyboard via USB**
-   - On Linux, it typically appears as `/dev/ttyACM*` or `/dev/ttyUSB*`.
-   - `SerialPortManager` uses `udevadm` to look for `ID_MODEL=KaSeV2`.
+Design notes and recommendations:
+- Keep a per-layout mapping table instead of trying to do a single two-way map that swaps keys in place. A common bug is doing a naive swap where `Q -> A` and `A -> Q` are both applied in a single pass; depending on iteration order you end up with all `Q` or all `A`.
+  - Correct approach: build a mapping that maps from logical HID key code to the label to show for the selected layout (lookup table from source HID -> display string). Do not mutate the source key codes in place; compute the label only.
+- Example strategy:
+  - KeyConverter holds a Dictionary<Layout, Dictionary<K_Keys, string>> or a function that returns the label for a given `K_Keys` and current layout.
+  - When the layout changes (ComboBox selection), raise PropertyChanged for the property used by the `Keycap` binding or force a refresh of the keycap visuals so the converter is re-run.
 
-3. **Start KaSe_soft**
-   - Run the application as shown above.
-   - Click the `connect` button.
-   - If the port is found and opened successfully, the app will request
-     the current keymap for the active layer.
+Refreshing the keycap display when layout changes:
+- In `MainWindow`, the ComboBox for layout selection should be bound to a `SelectedLayout` property (TwoWay). When that property changes, notify listeners (INotifyPropertyChanged).
+- Options to refresh visuals:
+  - Rebuild the keyboard grid (`KeyboardGrid.Children.Clear()` and call the renderer again) after the layout change.
+  - Or, have `Keycap` listen to a global `CurrentLayout` property and re-evaluate the binding (trigger `PropertyChanged` for the value used by the converter).
 
-4. **Inspect and edit layers**
-   - Use the UI to switch layers.
-   - Click/select a key and choose a new `K_Keys` value.
-   - The software sends an update command to the firmware.
-
-5. **Persistent storage**
-   - The firmware stores keymaps in NVS / LittleFS (see `KaSe_Code` docs).
-   - Once written, keymaps survive power cycles of the keyboard.
+Avoiding the "swap loop" bug (Q <-> A):
+- Never perform an in-place two-way swap by iterating over the same collection and writing results back to it using the original values as keys. Always read from the original map and write to a new result map.
 
 ---
 
-## Troubleshooting
+## Combobox for layout selection (UI)
 
-- **The keyboard is not detected**
-  - Check that the firmware from `KaSe_Code` is flashed and running.
-  - Confirm that the device appears in `/dev`:
+A ComboBox was added to the main UI to pick the keyboard layout (e.g. `qwerty`, `azerty`, `qwertz`). Ensure the data bindings are correct in `MainWindow.axaml`:
 
-    ```bash
-    ls /dev/ttyACM* /dev/ttyUSB* 2>/dev/null
-    ```
+- ItemsSource should point to the list of available layouts (string or enum collection).
+- SelectedItem should bind to `SelectedLayout` on the window / view model.
 
-  - Manually check the udev information, e.g.:
-
-    ```bash
-    udevadm info -n /dev/ttyACM0 | grep 'ID_MODEL'
-    ```
-
-  - If the model name differs from `KaSeV2`, you might need to
-    adjust `SerialPortManager.CheckPort()`.
-
-- **UI shows the layout but no key values**
-  - Verify that the serial port really opened when pressing `connect`.
-  - Check that the firmware supports the keymap‑query commands used by this tool
-    (see the CDC ACM protocol description in `KaSe_Code`).
-
-- **Display or theme issues**
-  - The app uses Avalonia with the `FluentTheme`.
-    Depending on your environment, different GPU or platform settings
-    may help; refer to Avalonia documentation for advanced options.
+When the selection changes, either:
+- rebuild the keyboard UI (to re-run KeyConverter per key), or
+- raise a PropertyChanged event that causes each `Keycap` to re-evaluate its displayed label.
 
 ---
 
-## Relationship with other repositories
+## CDC logs and terminal view
 
-- **`KaSe_Code` – Firmware**
-  - Implements matrix scanning, layers, persistent keymaps, storage, USB HID,
-    BLE HID, OLED display, and the CDC ACM command interface used by KaSe_soft.
+The UI exposes a "Terminal" tab that displays incoming serial messages. To redirect logs to the CDC terminal view:
+- Ensure `SerialPortManager` fires a `RawDataReceived` or similar event with incoming data.
+- Subscribe to that event from `MainWindow` and append text to the `TerminalOutput` TextBlock (make sure to marshal to the UI thread when updating UI elements).
 
-- **`KaSe_PCB` – Hardware / PCB / mechanics**
-  - KiCad project with schematics, PCB layout, Gerbers and 3D resources.
-  - Describes the exact MCU, pinout, physical layout and mechanical constraints.
+Example pattern in code (UI thread marshaling):
 
-KaSe_soft is the **desktop side** of this ecosystem: it provides a friendly
-way to configure what the firmware will store and execute on the actual hardware.
+```csharp
+// pseudo-code
+_serialPortManager.RawDataReceived += (s, bytes) =>
+{
+    Dispatcher.UIThread.Post(() => TerminalOutput.Text += Encoding.UTF8.GetString(bytes) + "\n");
+};
+```
 
 ---
 
-## Project status and contributions
+## Troubleshooting: app blocks on startup (SettingsManager.LoadAsync)
 
-This project is **work in progress**. Internal APIs (including the serial
-protocol and parts of the UI) may still evolve.
+You reported the program is blocked on this call in `MainWindow`:
 
-Contributions are welcome, for example:
+```csharp
+SettingsManager.LoadAsync().GetAwaiter().GetResult();
+```
 
-- Extending the UI (better key selection, multi‑select, themes).
-- Adding advanced layer features (macros, combos, tap‑dance, etc.).
-- Improving cross‑platform support (Windows/macOS serial detection, etc.).
-- Enhancing error handling and logging.
+Root cause:
+- Calling `GetResult()` / `.Result` or `.GetAwaiter().GetResult()` on an async method from the UI thread can deadlock if that async method captures the synchronization context and awaits something that needs the UI thread to finish.
 
-If you open an issue or pull request, please mention whether your changes
-also touch the firmware (`KaSe_Code`) or hardware (`KaSe_PCB`).
+Recommended fixes (pick one):
+1) Make the caller asynchronous and `await` the call from an async event handler. For example, instead of calling `GetResult()` in the constructor or synchronously on load, use an async loaded handler:
 
-### Roadmap (short)
+```csharp
+private async void Control_OnLoaded(object? sender, RoutedEventArgs e)
+{
+    await SettingsManager.LoadAsync();
+    // follow-up initialization
+}
+```
 
-- ✅ Linux support (tested with udev-based serial detection).
-- ✅ Windows support (planned; serial-port detection and testing still to do).
-- 🚧 macOS support (to be explored once Windows path is stable).
-- 🚧 Macros
-- 🚧 Rename layers
-- 🚧 Research Key
-- 🚧 other confort
+2) If you must run sync, run the load on a background thread and then marshal any UI updates back to the UI thread, e.g.:
+
+```csharp
+Task.Run(async () =>
+{
+    await SettingsManager.LoadAsync();
+    Dispatcher.UIThread.Post(() => { /* update UI */ });
+}).Wait();
+```
+
+3) Change `LoadAsync` implementation to avoid capturing the UI context (use `ConfigureAwait(false)` on awaited calls inside `LoadAsync`) so the method does not require the UI thread to continue. This is a less invasive workaround but depends on the internals of `LoadAsync`.
+
+Why the deadlock happens:
+- The UI thread synchronously blocks waiting for `LoadAsync` to complete. `LoadAsync` uses awaits that by default try to resume on the captured context (UI thread). That resume cannot run because the UI thread is blocked — deadlock.
+
+Actionable recommendation: change the load call in `MainWindow` to an `await` from an async loaded handler. This is the simplest and safest approach.
+
+---
+
+## Common runtime/debug tips
+
+- If Rider debugs but can't find PDBs for framework assemblies, that's normal for system/shared assemblies; IDEs show messages like "Pdb file was not found or failed to read" for framework packages.
+- If build sometimes does not produce an `apphost` executable:
+  - ensure you pass `-r linux-x64` to build/publish, or add a `<RuntimeIdentifier>` in the `.csproj`.
+  - check that `PublishSingleFile` and `SelfContained` settings aren't interfering with what you expect.
+
+---
+
+## Known issues and quick fixes
+
+- Duplicate key in `KeyConverter` initialization (exception: "An item with the same key has already been added"):
+  - Use `dictionary.TryAdd(key, value)` or check `ContainsKey` before `Add`, or deduplicate the source data.
+
+- `MainWindow.axaml` binding errors such as "Unable to resolve property or method of name 'Layouts' on type 'Avalonia.Controls.Window'" mean you bound to `ElementName=main` expecting properties on the code-behind. Make sure `MainWindow` defines public properties `Layouts`, `SelectedLayout`, etc., or use a view model as DataContext.
+
+---
+
+## How to contribute / next steps
+
+If you'd like, I can:
+- add an example implementation of per-layout mapping in `KeyConverter` and unit tests to validate swaps (avoid Q↔A bug),
+- change the synchronous `LoadAsync().GetAwaiter().GetResult()` call into an async `await` in `Control_OnLoaded`, and update `MainWindow` code accordingly,
+- add an explicit `RuntimeIdentifier` to the csproj or update the README with a step-by-step fix for Rider's build settings.
+
+Tell me which of these you want me to do next and I will apply small, safe changes and validate via a build.
 
 ---
 
 ## License
 
-Check the `LICENSE` file in this repository for licensing information.
-
-If you build on this project (software, firmware or hardware),
-please keep references to the original KaSe project and its repositories:
-`KaSe_SOFT`, `KaSe_Code`, and `KaSe_PCB`.
-
----
-
-# 🇫🇷 KaSe_soft – Outil de configuration pour le clavier KaSe
-
-KaSe_soft est le logiciel de configuration et de gestion pour le clavier
-mécanique custom **KaSe**. Il fournit une interface graphique pour visualiser
-la disposition des touches, modifier les keymaps et les couches, puis envoyer
-la configuration au clavier via USB (CDC ACM), en s'appuyant sur :
-
-- le firmware embarqué : [`KaSe_Code`](https://github.com/mornepousse/KaSe_Code)
-- le hardware / PCB / mécanique : [`KaSe_PCB`](https://github.com/mornepousse/KaSe_PCB)
-
----
-
-## Fonctionnalités
-
-- **Visualisation du clavier**
-  - Vue graphique du layout KaSe (disposition en colonnes, blocs inclinés,
-    touches spéciales).
-  - Le rendu est généré à partir du fichier `default.json` décrivant la
-    géométrie du clavier (géré par `KeyboardUiRenderer`).
-
-- **Gestion des couches (layers)**
-  - Lecture de la keymap courante depuis le clavier.
-  - Sélection du layer actif.
-  - Affichage des touches pour chaque couche.
-
-- **Remapping des touches**
-  - Sélection d'une touche dans l'interface puis choix d'un nouveau keycode
-    (basé sur l'énumération HID définie dans `K_Keys.cs`).
-  - Prise en charge d'un large ensemble de touches HID standard (lettres,
-    chiffres, modificateurs, fonctions, keypad, etc.).
-  - Envoi des modifications au firmware via un protocole texte simple
-    sur le port série CDC ACM.
-
-- **Communication série avec le clavier**
-  - Détection automatique du port série du clavier KaSe sous Linux
-    (recherche d'un périphérique avec `ID_MODEL=KaSeV2` via `udevadm`).
-  - Ouverture / fermeture du port série.
-  - Requête de keymaps, changement de layer, mise à jour de touches.
-
-- **Interface multi‑plateforme (Avalonia)**
-  - Application basée sur **Avalonia UI**.
-  - Plateforme cible actuelle : Linux (testé avec détection via udev).
-    D'autres OS sont possibles mais nécessitent une adaptation de la
-    détection de port série.
-
----
-
-## Structure du projet (aperçu)
-
-Fichiers principaux dans le projet `KaSe Controller` :
-
-- `App.axaml` / `App.axaml.cs`
-  - Point d'entrée Avalonia et configuration globale.
-  - Fournit les keymaps/layers par défaut et stocke l'état global
-    (layer courant, etc.).
-
-- `MainWindow.axaml` / `MainWindow.axaml.cs`
-  - Fenêtre principale de l'application.
-  - Contient la vue principale du clavier (grille dans laquelle est injecté
-    le layout dynamique) et des contrôles comme le bouton `connect`.
-  - Au chargement, insère l'UI générée par
-    `KeyboardUiRenderer.LoadDefaultJsonUi()`.
-
-- `SelectWindow.axaml` / `SelectWindow.axaml.cs`
-  - Fenêtre/contrôle supplémentaire pour la sélection de touches et de couches.
-  - Lie une `ObservableCollection` de `K_Keys` et utilise le convertisseur
-    pour afficher des labels lisibles.
-
-- `KeyboardUiRenderer.cs`
-  - Charge `default.json`, qui décrit la disposition physique du clavier.
-  - Construit dynamiquement les contrôles Avalonia (`Keycap`, `StackPanel`,
-    groupes imbriqués, etc.) en fonction de la structure JSON
-    (colonnes, lignes, marges, rotations, largeurs spéciales…).
-
-- `Keycap.axaml` / `Keycap.axaml.cs`
-  - Contrôle personnalisé Avalonia représentant une touche.
-  - Se lie à une valeur `K_Keys` et utilise `KeyConverter` pour générer
-    le texte affiché.
-
-- `KeyConverter.cs`
-  - Convertit les valeurs de l'énumération `K_Keys` en labels texte pour l'UI
-    (par exemple `K_Q` → "Q").
-
-- `K_Keys.cs`
-  - Grande énumération des keycodes HID.
-  - Contient à la fois les codes HID bruts (ex. `HID_KEY_Q`) et des alias
-    plus conviviaux utilisés dans les keymaps (`K_Q`, `K_1`, `K_LCTRL`, etc.).
-
-- `SerialPortManager.cs`
-  - Gère les ports série.
-  - Énumère les ports disponibles et détecte celui du clavier KaSe
-    (Linux : `udevadm` + `ID_MODEL=KaSeV2`).
-  - Ouvre/ferme le port série et expose des méthodes pour :
-    - récupérer la keymap d'un layer donné,
-    - modifier des touches,
-    - envoyer d'autres commandes au clavier.
-
-- `default.json`
-  - Description JSON de la disposition physique : colonnes, rangées,
-    marges, angles de rotation des blocs, largeurs spéciales, etc.
-  - Utilisé uniquement pour le rendu du clavier dans l'UI ; les valeurs
-    de touches viennent du firmware / de la keymap.
-
----
-
-## Prérequis
-
-- **.NET SDK** 9.0 (ou version compatible avec `KaSe Controller.csproj`).
-- **Linux** (testé) :
-  - `udevadm` doit être disponible pour la détection automatique du port.
-- Un clavier KaSe assemblé à partir de
-  [`KaSe_PCB`](https://github.com/mornepousse/KaSe_PCB) et flashé avec
-  le firmware [`KaSe_Code`](https://github.com/mornepousse/KaSe_Code).
-
----
-
-## Prise en main
-
-### 1. Cloner le dépôt
-
-```bash
-git clone https://github.com/mornepousse/KaSe_SOFT.git
-cd KaSe_SOFT/"KaSe Controller"
-```
-
-### 2. Restaurer les dépendances et compiler
-
-```bash
-dotnet restore
-dotnet build
-```
-
-### 3. Lancer l'application
-
-```bash
-dotnet run
-```
-
-Au premier lancement, tu devrais voir le layout KaSe et un bouton `connect`
-en bas de la fenêtre.
-
----
-
-## Utilisation avec un clavier KaSe réel
-
-1. **Flasher le firmware**
-   - Suivre la documentation de [`KaSe_Code`](https://github.com/mornepousse/KaSe_Code)
-     pour flasher l'ESP32‑S3 avec le firmware KaSe.
-   - Une fois flashé, le périphérique expose :
-     - une interface HID clavier, et
-     - une interface série CDC ACM.
-
-2. **Brancher le clavier en USB**
-   - Sous Linux, il apparaît en général comme `/dev/ttyACM*` ou `/dev/ttyUSB*`.
-   - `SerialPortManager` utilise `udevadm` pour rechercher `ID_MODEL=KaSeV2`.
-
-3. **Lancer KaSe_soft**
-   - Lancer l'application comme indiqué ci‑dessus.
-   - Cliquer sur le bouton `connect`.
-   - Si le port est trouvé et ouvert correctement, l'application
-     demande la keymap du layer actif et l'affiche.
-
-4. **Inspecter et modifier les layers**
-   - Utiliser l'interface pour changer de layer.
-   - Cliquer/sélectionner une touche puis choisir une nouvelle valeur `K_Keys`.
-   - Le logiciel envoie une commande de mise à jour au firmware.
-
-5. **Stockage persistant**
-   - Le firmware stocke les keymaps dans NVS / LittleFS (voir `KaSe_Code`).
-   - Les keymaps survivent aux redémarrages du clavier.
-
----
-
-## Dépannage
-
-- **Le clavier n'est pas détecté**
-  - Vérifier que le firmware `KaSe_Code` est bien flashé et en cours d'exécution.
-  - Vérifier la présence du périphérique dans `/dev` :
-
-    ```bash
-    ls /dev/ttyACM* /dev/ttyUSB* 2>/dev/null
-    ```
-
-  - Vérifier manuellement les infos udev, par exemple :
-
-    ```bash
-    udevadm info -n /dev/ttyACM0 | grep 'ID_MODEL'
-    ```
-
-  - Si le nom de modèle est différent de `KaSeV2`, adapter
-    `SerialPortManager.CheckPort()`.
-
-- **L'UI affiche le layout mais pas les touches**
-  - Vérifier que le port série est bien ouvert après avoir cliqué sur `connect`.
-  - Vérifier que le firmware supporte les commandes de lecture de keymap
-    utilisées par cet outil (voir la doc du protocole CDC ACM dans `KaSe_Code`).
-
-- **Problèmes d'affichage / thème**
-  - L'application utilise Avalonia avec le thème `FluentTheme`.
-  - Selon l'environnement, différents réglages GPU/plateforme peuvent aider ;
-    se référer à la documentation Avalonia pour les options avancées.
-
----
-
-## Liens avec les autres dépôts
-
-- **`KaSe_Code` – Firmware**
-  - Implémente le scan de matrice, les layers, les keymaps persistants,
-    le stockage, l'USB HID, le BLE HID, l'écran OLED et l'interface de
-    commandes CDC ACM utilisée par KaSe_soft.
-
-- **`KaSe_PCB` – Hardware / PCB / mécanique**
-  - Projet KiCad avec schémas, PCB, Gerbers et ressources 3D.
-  - Décrit le MCU exact, le brochage, la disposition physique et les
-    contraintes mécaniques.
-
-KaSe_soft est la **partie desktop** de cet écosystème : il fournit un moyen
-confortable de configurer ce que le firmware exécutera sur le hardware réel.
-
----
-
-## État du projet et contributions
-
-Ce projet est **en cours de développement**. Les API internes (protocole série,
-parties de l'UI, etc.) peuvent encore évoluer.
-
-Les contributions sont bienvenues, par exemple :
-
-- Amélioration de l'UI (sélection de touches, thèmes, raccourcis).
-- Ajout de fonctionnalités avancées pour les layers (macros, combos, etc.).
-- Meilleure prise en charge multi‑plateforme (détection série Windows/macOS…).
-- Amélioration de la gestion des erreurs et des logs.
-
-Si tu ouvres une issue ou une pull request, indique si tes changements
-impactent aussi le firmware (`KaSe_Code`) ou le hardware (`KaSe_PCB`).
-
----
-
-## Licence
-
-Voir le fichier `LICENSE` de ce dépôt pour les informations de licence.
-
-Si tu réutilises ce projet (logiciel, firmware ou hardware), merci de garder
-des références au projet KaSe original et à ses dépôts :
-`KaSe_SOFT`, `KaSe_Code` et `KaSe_PCB`.
+See the `LICENSE` file in this repository.
