@@ -12,5 +12,6 @@ Global
 		{141CD155-52A4-4BF2-B923-6CFDA712C9EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{141CD155-52A4-4BF2-B923-6CFDA712C9EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{141CD155-52A4-4BF2-B923-6CFDA712C9EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{141CD155-52A4-4BF2-B923-6CFDA712C9EE}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

@@ -18,6 +18,20 @@
         <UseAppHost>true</UseAppHost>
     </PropertyGroup>
 
+    <!-- For Release builds on Windows: produce a single-file self-contained EXE (win-x64) -->
+    <PropertyGroup Condition="'$(Configuration)'=='Release'">
+        <!-- Target the Windows runtime by default for Release to produce an .exe when publishing -->
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <UseAppHost>true</UseAppHost>
+        <SelfContained>true</SelfContained>
+        <!-- Produce a single file executable to simplify distribution -->
+        <PublishSingleFile>true</PublishSingleFile>
+        <!-- Keep native libraries extract behavior to avoid runtime extraction issues -->
+        <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+        <!-- Disable aggressive trimming by default to avoid runtime missing types -->
+        <PublishTrimmed>false</PublishTrimmed>
+    </PropertyGroup>
+
     <ItemGroup>
         <PackageReference Include="Avalonia" Version="11.3.0"/>
         <PackageReference Include="Avalonia.Desktop" Version="11.3.0"/>
