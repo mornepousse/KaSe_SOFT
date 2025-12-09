@@ -31,8 +31,8 @@
                       IsEnabled="{Binding ElementName=main,Path=IsOpened}"/>
             <!-- <Button Click="ExportLayerBtnOnClick"  x:Name="ExportConfigBtn" IsEnabled="{Binding ElementName=main,Path=IsOpened}" Margin="5,0" Content="Export config"></Button> -->
             <!-- <Button Click="ImportLayerBtnOnClick" x:Name="ImportConfigBtn" IsEnabled="{Binding ElementName=main,Path=IsOpened}" Margin="5,0" Content="Import config"></Button> -->
-            <Button x:Name="ExportLayerBtn" IsEnabled="{Binding ElementName=main,Path=IsOpened}" Margin="15,0,5,0" Content="Export layer"></Button>
-            <Button x:Name="ImportLayerBtn" IsEnabled="{Binding ElementName=main,Path=IsOpened}" Margin="5,0" Content="Import layer"></Button>
+            <Button Click="ExportLayerBtnOnClick" x:Name="ExportLayerBtn" IsEnabled="{Binding ElementName=main,Path=IsOpened}" Margin="15,0,5,0" Content="Export layer"></Button>
+            <Button Click="ExportLayerBtnOnClick" x:Name="ImportLayerBtn" IsEnabled="{Binding ElementName=main,Path=IsOpened}" Margin="5,0" Content="Import layer"></Button>
             <TextBox IsEnabled="{Binding ElementName=main,Path=IsOpened}" Text="{Binding ElementName=main,Path=SelectedLayoutName}" MinWidth="30"></TextBox>
             <Button Click="Button_OnClickSetLayoutName" x:Name="SetLayoutBtn" IsEnabled="{Binding ElementName=main,Path=IsOpened}" Margin="5,0" Content="Set"></Button>
             <StackPanel Orientation="Vertical"

@@ -89,6 +89,7 @@ public class KeyConverter : IValueConverter
             { "SLASH", "!" },
             { "M", "," }, // visual swap
             { "W", "Z"  },  // visual swap
+            { "Z", "W"  },  // visual swap
             { "Q", "A"  },
             { "A", "Q"  },
             { ",", ";"  },
