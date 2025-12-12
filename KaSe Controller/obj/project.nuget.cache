@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "mWl7aAoqAK4=",
+  "dgSpecHash": "vhsGfyYs+Aw=",
   "success": true,
   "projectFilePath": "/home/mae/Documents/GitHub/KaSe_SOFT/KaSe Controller/KaSe Controller.csproj",
   "expectedPackageFiles": [
@@ -25,7 +25,9 @@
     "/home/mae/.nuget/packages/harfbuzzsharp.nativeassets.webassembly/7.3.0.3/harfbuzzsharp.nativeassets.webassembly.7.3.0.3.nupkg.sha512",
     "/home/mae/.nuget/packages/harfbuzzsharp.nativeassets.win32/7.3.0.3/harfbuzzsharp.nativeassets.win32.7.3.0.3.nupkg.sha512",
     "/home/mae/.nuget/packages/microcom.runtime/0.11.0/microcom.runtime.0.11.0.nupkg.sha512",
-    "/home/mae/.nuget/packages/microsoft.net.illink.tasks/10.0.0/microsoft.net.illink.tasks.10.0.0.nupkg.sha512",
+    "/home/mae/.nuget/packages/microsoft.net.illink.tasks/10.0.1/microsoft.net.illink.tasks.10.0.1.nupkg.sha512",
+    "/home/mae/.nuget/packages/nuget.versioning/6.14.0/nuget.versioning.6.14.0.nupkg.sha512",
+    "/home/mae/.nuget/packages/octokit/13.0.1/octokit.13.0.1.nupkg.sha512",
     "/home/mae/.nuget/packages/runtime.android-arm.runtime.native.system.io.ports/10.0.0-preview.7.25380.108/runtime.android-arm.runtime.native.system.io.ports.10.0.0-preview.7.25380.108.nupkg.sha512",
     "/home/mae/.nuget/packages/runtime.android-arm64.runtime.native.system.io.ports/10.0.0-preview.7.25380.108/runtime.android-arm64.runtime.native.system.io.ports.10.0.0-preview.7.25380.108.nupkg.sha512",
     "/home/mae/.nuget/packages/runtime.android-x64.runtime.native.system.io.ports/10.0.0-preview.7.25380.108/runtime.android-x64.runtime.native.system.io.ports.10.0.0-preview.7.25380.108.nupkg.sha512",
@@ -52,8 +54,9 @@
     "/home/mae/.nuget/packages/system.io.ports/10.0.0-preview.7.25380.108/system.io.ports.10.0.0-preview.7.25380.108.nupkg.sha512",
     "/home/mae/.nuget/packages/system.management/10.0.0/system.management.10.0.0.nupkg.sha512",
     "/home/mae/.nuget/packages/tmds.dbus.protocol/0.21.2/tmds.dbus.protocol.0.21.2.nupkg.sha512",
-    "/home/mae/.nuget/packages/microsoft.netcore.app.runtime.linux-x64/10.0.0/microsoft.netcore.app.runtime.linux-x64.10.0.0.nupkg.sha512",
-    "/home/mae/.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/10.0.0/microsoft.aspnetcore.app.runtime.linux-x64.10.0.0.nupkg.sha512"
+    "/home/mae/.nuget/packages/velopack/0.0.1369-g1d5c984/velopack.0.0.1369-g1d5c984.nupkg.sha512",
+    "/home/mae/.nuget/packages/microsoft.netcore.app.runtime.linux-x64/10.0.1/microsoft.netcore.app.runtime.linux-x64.10.0.1.nupkg.sha512",
+    "/home/mae/.nuget/packages/microsoft.aspnetcore.app.runtime.linux-x64/10.0.1/microsoft.aspnetcore.app.runtime.linux-x64.10.0.1.nupkg.sha512"
   ],
   "logs": []
 }

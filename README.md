@@ -8,13 +8,206 @@ to the keyboard over USB (CDC ACM). This README has been updated with practical 
 
 ---
 
-## Résumé / Summary
+## Summary
 
-KaSe_soft permet :
-- visualiser le layout du clavier KaSe,
-- éditer les keymaps / layers et les envoyer au clavier sur CDC ACM,
-- gérer plusieurs dispositions de clavier (layout) côté UI,
-- debugger et dépanner les problèmes de build et d'exécution.
+KaSe_soft allows you to:
+- Visualize the KaSe keyboard layout,
+- Edit keymaps/layers and send them to the keyboard via CDC ACM,
+- Manage multiple keyboard layouts (QWERTY, AZERTY, QWERTZ) in the UI,
+- Check for and download updates from GitHub,
+- Debug and troubleshoot build and execution issues.
+
+**Current version:** 0.2.2-alpha
+
+---
+
+## Update System
+
+The application has an integrated automatic update system that checks for new versions on GitHub.
+
+### Auto-update Alternatives for AvaloniaUI
+
+The project currently uses a **custom UpdateManager** based on **Octokit** (GitHub API). Here are the available alternatives:
+
+#### 1. Custom UpdateManager (Current Implementation) ✅
+- **Advantages:**
+  - Full control over the process
+  - Uses the official GitHub API (Octokit)
+  - Cross-platform (Windows, Linux, macOS)
+  - No heavy dependencies
+- **Features:**
+  - Checks GitHub releases
+  - Downloads the archive matching the runtime
+  - Extracts and applies the update
+  - Restarts the application
+
+#### 2. Velopack (Installed but not used)
+- **Advantages:**
+  - Complete deployment and update system
+  - Supports delta updates (downloads only changes)
+  - Cross-platform
+- **Disadvantages:**
+  - More complex to configure
+  - Requires specific build/publish process
+- **Package:** `Velopack` version 0.0.1369-g1d5c984
+
+#### 3. Other Alternatives
+- **Sparkle.NET** : Mainly for macOS
+- **Squirrel.Windows** : Windows only
+- **GitHub Releases API directly** : As currently implemented
+
+### Using the Update System
+
+1. In the interface, go to the "Updates" tab
+2. Click "Check for Updates"
+3. If an update is available, it displays with release notes
+4. Click "Download and Install" to download
+5. The application restarts automatically after download
+
+**GitHub Repository:** https://github.com/mornepousse/KaSe_SOFT/releases
+
+---
+
+## How to Create and Publish an Update
+
+### Quick Method: Using the Automated Script
+
+A bash script is provided to automate the entire process:
+
+```bash
+./release.sh 0.2.3
+```
+
+The script will:
+1. Update the version in the .csproj
+2. Compile for Linux and Windows
+3. Create ZIP archives
+4. Create the Git tag (if you confirm)
+5. Push to GitHub (if you confirm)
+6. Display instructions to create the release on GitHub
+
+**This is the recommended method!**
+
+### Manual Method: Detailed Steps
+
+#### 1. Mettre à jour le numéro de version
+
+Éditez le fichier `KaSe Controller/KaSe Controller.csproj` et modifiez les lignes suivantes :
+
+```xml
+<Version>0.2.3</Version>
+<AssemblyVersion>0.2.3.0</AssemblyVersion>
+<FileVersion>0.2.3.0</FileVersion>
+```
+
+Incrémentez le numéro de version selon le [versioning sémantique](https://semver.org/) :
+- **Majeur** (1.0.0) : Changements incompatibles avec les versions précédentes
+- **Mineur** (0.2.0) : Nouvelles fonctionnalités compatibles
+- **Patch** (0.2.1) : Corrections de bugs
+
+#### 2. Compiler les versions pour chaque plateforme
+
+**Pour Linux :**
+```bash
+cd "/home/mae/Documents/GitHub/KaSe_SOFT"
+dotnet publish -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false
+```
+
+**Pour Windows :**
+```bash
+dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishTrimmed=false
+```
+
+Les fichiers seront générés dans :
+- Linux : `KaSe Controller/bin/Release/net10.0/linux-x64/publish/`
+- Windows : `KaSe Controller/bin/Release/net10.0/win-x64/publish/`
+
+#### 3. Créer les archives
+
+**Linux :**
+```bash
+cd "KaSe Controller/bin/Release/net10.0/linux-x64/publish"
+zip -r ../../../../../KaSe_SOFT_linux-x64.zip .
+```
+
+**Windows :**
+```bash
+cd "KaSe Controller/bin/Release/net10.0/win-x64/publish"
+zip -r ../../../../../KaSe_SOFT_win-x64.zip .
+```
+
+Ou utilisez le profil de publication Rider si disponible.
+
+#### 4. Créer un tag Git
+
+```bash
+git add .
+git commit -m "Release v0.2.3"
+git tag -a v0.2.3 -m "Version 0.2.3 - Description des changements"
+git push origin master
+git push origin v0.2.3
+```
+
+#### 5. Create a GitHub Release
+
+1. Go to https://github.com/mornepousse/KaSe_SOFT/releases
+2. Click "Draft a new release"
+3. Select the tag you just created (v0.2.3)
+4. Title: `KaSe Controller v0.2.3`
+5. Description: List the changes (markdown supported):
+   ```markdown
+   ## New Features
+   - Added automatic update system
+   - Multi-layout support (QWERTY, AZERTY, QWERTZ)
+   
+   ## Bug Fixes
+   - Fixed key conversion bug
+   - Improved stability
+   
+   ## Installation
+   Download the archive for your operating system and extract it.
+   ```
+
+6. **Attach the files**:
+   - `KaSe_SOFT_linux-x64.zip`
+   - `KaSe_SOFT_win-x64.zip`
+
+7. Check "Set as the latest release" if it's a stable version
+8. Click "Publish release"
+
+#### 6. Verification
+
+After publication, the update system in the application should:
+- Automatically detect the new version
+- Download the appropriate archive (linux-x64 or win-x64)
+- Offer installation
+
+### Important Naming Conventions
+
+For the UpdateManager to correctly detect files:
+- The tag name must start with `v`: `v0.2.3`
+- Archives must contain the runtime identifier: `linux-x64` or `win-x64`
+- Supported format: `.zip` (`.tar.gz` also supported for Linux)
+
+### Changelog File (optional)
+
+You can maintain a `CHANGELOG.md` file to track history:
+
+```markdown
+# Changelog
+
+## [0.2.3] - 2025-12-09
+### Added
+- Automatic update system with Octokit
+- QWERTY/AZERTY/QWERTZ layout support
+
+### Fixed
+- Key conversion issue
+- Startup freeze on SettingsManager
+
+## [0.2.2] - 2025-12-06
+...
+```
 
 ---
 

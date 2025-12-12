@@ -99,5 +99,43 @@
                 <TextBlock x:Name="TerminalOutput" TextWrapping="Wrap" />
             </ScrollViewer>
         </TabItem>
+        
+        <TabItem Header="Updates">
+            <Grid Margin="20">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+                
+                <StackPanel Grid.Row="0" Orientation="Vertical" Spacing="10">
+                    <TextBlock FontSize="18" FontWeight="Bold" Text="Automatic Updates"/>
+                    <TextBlock Text="{Binding ElementName=main, Path=CurrentVersion}" FontSize="14"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="1" Margin="0,20,0,0" Orientation="Vertical" Spacing="10">
+                    <Button x:Name="CheckUpdateBtn" Content="Check for Updates" Click="CheckUpdateBtn_OnClick" Width="200" HorizontalAlignment="Left"/>
+                    <TextBlock x:Name="UpdateStatusText" Text="{Binding ElementName=main, Path=UpdateStatus}" FontSize="14" Foreground="{Binding ElementName=main, Path=UpdateStatusColor}"/>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="2" Margin="0,20,0,0" Orientation="Vertical" Spacing="10" IsVisible="{Binding ElementName=main, Path=UpdateAvailable}">
+                    <TextBlock FontSize="14" FontWeight="Bold" Text="{Binding ElementName=main, Path=LatestVersionText}"/>
+                    <TextBlock Text="{Binding ElementName=main, Path=ReleaseNotes}" TextWrapping="Wrap" MaxHeight="150" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button x:Name="DownloadUpdateBtn" Content="Download and Install" Click="DownloadUpdateBtn_OnClick" Width="200"/>
+                        <Button Content="Ignore" Click="IgnoreUpdateBtn_OnClick" Width="100"/>
+                    </StackPanel>
+                </StackPanel>
+                
+                <StackPanel Grid.Row="3" Margin="0,20,0,0" Orientation="Vertical" Spacing="5" IsVisible="{Binding ElementName=main, Path=IsDownloading}">
+                    <TextBlock Text="{Binding ElementName=main, Path=DownloadStatus}"/>
+                    <ProgressBar Minimum="0" Maximum="100" Value="{Binding ElementName=main, Path=DownloadProgress}" Height="20"/>
+                </StackPanel>
+                
+                <TextBlock Grid.Row="4" Margin="0,20,0,0" VerticalAlignment="Bottom" FontSize="11" Foreground="Gray" Text="Updates are fetched from GitHub Releases"/>
+            </Grid>
+        </TabItem>
     </TabControl>
 </Window>

@@ -10,6 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Text.RegularExpressions;
 using System.Text.Json;
+using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -589,6 +590,164 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    #region Update Properties and Methods
+
+    private readonly UpdateManager _updateManager = new UpdateManager("mornepousse", "KaSe_SOFT");
+
+    private string _currentVersion = $"Current version: {Assembly.GetExecutingAssembly().GetName().Version}";
+    public string CurrentVersion
+    {
+        get => _currentVersion;
+        set { _currentVersion = value; OnPropertyChanged(); }
+    }
+
+    private string _updateStatus = "Ready to check for updates";
+    public string UpdateStatus
+    {
+        get => _updateStatus;
+        set { _updateStatus = value; OnPropertyChanged(); }
+    }
+
+    private IBrush _updateStatusColor = Brushes.Gray;
+    public IBrush UpdateStatusColor
+    {
+        get => _updateStatusColor;
+        set { _updateStatusColor = value; OnPropertyChanged(); }
+    }
+
+    private bool _updateAvailable;
+    public bool UpdateAvailable
+    {
+        get => _updateAvailable;
+        set { _updateAvailable = value; OnPropertyChanged(); }
+    }
+
+    private string _latestVersionText = "";
+    public string LatestVersionText
+    {
+        get => _latestVersionText;
+        set { _latestVersionText = value; OnPropertyChanged(); }
+    }
+
+    private string _releaseNotes = "";
+    public string ReleaseNotes
+    {
+        get => _releaseNotes;
+        set { _releaseNotes = value; OnPropertyChanged(); }
+    }
+
+    private bool _isDownloading;
+    public bool IsDownloading
+    {
+        get => _isDownloading;
+        set { _isDownloading = value; OnPropertyChanged(); }
+    }
+
+    private string _downloadStatus = "";
+    public string DownloadStatus
+    {
+        get => _downloadStatus;
+        set { _downloadStatus = value; OnPropertyChanged(); }
+    }
+
+    private double _downloadProgress;
+    public double DownloadProgress
+    {
+        get => _downloadProgress;
+        set { _downloadProgress = value; OnPropertyChanged(); }
+    }
+
+    private async void CheckUpdateBtn_OnClick(object? sender, RoutedEventArgs e)
+    {
+        UpdateStatus = "Checking for updates...";
+        UpdateStatusColor = Brushes.Orange;
+        UpdateAvailable = false;
+
+        try
+        {
+            var updateInfo = await _updateManager.CheckForUpdatesAsync();
+            
+            if (!string.IsNullOrEmpty(updateInfo.Error))
+            {
+                UpdateStatus = $"Error: {updateInfo.Error}";
+                UpdateStatusColor = Brushes.Red;
+                return;
+            }
+
+            if (updateInfo.IsUpdateAvailable)
+            {
+                UpdateAvailable = true;
+                UpdateStatus = "Update available!";
+                UpdateStatusColor = Brushes.Green;
+                LatestVersionText = $"Latest version: {updateInfo.LatestVersion}";
+                ReleaseNotes = updateInfo.ReleaseNotes ?? "No release notes available.";
+            }
+            else
+            {
+                UpdateStatus = "You are using the latest version";
+                UpdateStatusColor = Brushes.Green;
+            }
+        }
+        catch (Exception ex)
+        {
+            UpdateStatus = $"Error checking for updates: {ex.Message}";
+            UpdateStatusColor = Brushes.Red;
+        }
+    }
+
+    private async void DownloadUpdateBtn_OnClick(object? sender, RoutedEventArgs e)
+    {
+        IsDownloading = true;
+        DownloadStatus = "Download in progress...";
+        DownloadProgress = 0;
+
+        try
+        {
+            var progress = new Progress<DownloadProgress>(p =>
+            {
+                Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    DownloadStatus = p.Status;
+                    DownloadProgress = p.Percentage;
+                });
+            });
+
+            var success = await _updateManager.DownloadAndInstallUpdateAsync(progress);
+            
+            if (success)
+            {
+                DownloadStatus = "Update downloaded successfully";
+                
+                if (await ConfirmAsync("The update is ready. The application must restart to apply the update. Restart now?", "Restart required"))
+                {
+                    _updateManager.ApplyUpdateAndRestart();
+                }
+            }
+            else
+            {
+                DownloadStatus = "Download failed";
+                await ShowInfoAsync("Unable to download the update. Please check your internet connection.", "Error");
+            }
+        }
+        catch (Exception ex)
+        {
+            DownloadStatus = $"Error: {ex.Message}";
+            await ShowInfoAsync($"Download failed: {ex.Message}", "Error");
+        }
+        finally
+        {
+            IsDownloading = false;
+        }
+    }
+
+    private void IgnoreUpdateBtn_OnClick(object? sender, RoutedEventArgs e)
+    {
+        UpdateAvailable = false;
+        UpdateStatus = "Update ignored";
+        UpdateStatusColor = Brushes.Gray;
+    }
+
+    #endregion
 
 
 
